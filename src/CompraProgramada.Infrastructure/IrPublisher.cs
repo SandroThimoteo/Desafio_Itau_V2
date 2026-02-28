@@ -13,13 +13,13 @@ namespace CompraProgramada.Infrastructure
             _producer = producer;
         }
 
-        public Task PublishDedoDuro(IrDedoDuroEvent evt)
+        public virtual Task PublishDedoDuro(IrDedoDuroEvent evt)
         {
             var json = JsonSerializer.Serialize(evt);
             return _producer.ProduceAsync(evt.ClienteId.ToString(), json);
         }
 
-        public Task PublishVenda(IrVendaEvent evt)
+        public virtual Task PublishVenda(IrVendaEvent evt)
         {
             var json = JsonSerializer.Serialize(evt);
             return _producer.ProduceAsync(evt.ClienteId.ToString(), json);

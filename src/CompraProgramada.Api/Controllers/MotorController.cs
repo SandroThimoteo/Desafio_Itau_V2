@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CompraProgramada.Application.Services;
+using CompraProgramada.Api.Services;
 using CompraProgramada.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,11 +14,13 @@ namespace CompraProgramada.Api.Controllers
     public class MotorController : ControllerBase
     {
         private readonly MotorCompraService _motor;
+        private readonly MotorAgendamentoStatusStore _statusStore;
         private readonly ApplicationDbContext _db;
 
-        public MotorController(MotorCompraService motor, ApplicationDbContext db)
+        public MotorController(MotorCompraService motor, MotorAgendamentoStatusStore statusStore, ApplicationDbContext db)
         {
             _motor = motor;
+            _statusStore = statusStore;
             _db = db;
         }
 
@@ -44,6 +47,24 @@ namespace CompraProgramada.Api.Controllers
             {
                 return StatusCode(500, new { erro = ex.Message });
             }
+        }
+
+        [HttpGet("agendamento/status")]
+        public ActionResult ObterStatusAgendamento()
+        {
+            var snapshot = _statusStore.ObterSnapshot();
+
+            var pendentes = CalendarioCompraProgramada.ObterCiclosPendentes(
+                DateTime.UtcNow,
+                _statusStore.ObterCiclosExecutados())
+                .Select(c => new { c.Chave, c.DiaBase, c.DataReferenciaUtc })
+                .ToList();
+
+            return Ok(new
+            {
+                status = snapshot,
+                ciclosPendentes = pendentes
+            });
         }
     }
 

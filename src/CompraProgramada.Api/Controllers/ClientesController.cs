@@ -13,11 +13,13 @@ namespace CompraProgramada.Api.Controllers
     public class ClientesController : ControllerBase
     {
         private readonly ClienteService _service;
+        private readonly RentabilidadeService _rentabilidadeService;
         private readonly ApplicationDbContext _db;
 
-        public ClientesController(ClienteService service, ApplicationDbContext db)
+        public ClientesController(ClienteService service, RentabilidadeService rentabilidadeService, ApplicationDbContext db)
         {
             _service = service;
+            _rentabilidadeService = rentabilidadeService;
             _db = db;
         }
 
@@ -90,19 +92,11 @@ namespace CompraProgramada.Api.Controllers
         [HttpGet("{clienteId}/rentabilidade")]
         public ActionResult ConsultarRentabilidade(long clienteId)
         {
-            var cliente = _db.Clientes
-                .Include(c => c.Custodia)
-                .FirstOrDefault(c => c.Id == clienteId);
+            var resultado = _rentabilidadeService.Calcular(clienteId);
+            if (resultado == null)
+                return NotFound(new { erro = "Cliente não encontrado" });
 
-            if (cliente == null) return NotFound(new { erro = "Cliente não encontrado" });
-
-            // Cálculo simplificado — preço atual via cotações seria integrado aqui
-            return Ok(new
-            {
-                clienteId = cliente.Id,
-                mensagem = "Rentabilidade calculada com base no preço médio de aquisição vs cotação atual.",
-                itens = cliente.Custodia?.Itens
-            });
+            return Ok(resultado);
         }
     }
 

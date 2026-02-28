@@ -5,10 +5,13 @@ using System.Linq;
 using CompraProgramada.Application.Services;
 using CompraProgramada.Domain.Entities;
 using CompraProgramada.Infrastructure;
+using CompraProgramada.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CompraProgramada.Tests
 {
+    [Collection("Cotacoes")]
     public class MotorCompraServiceTests
     {
         private string BuildLinhaValida(string ticker, string date = "20260225")
@@ -36,21 +39,40 @@ namespace CompraProgramada.Tests
             return new string(chars);
         }
 
+        private class FakeIrPublisher : IrPublisher
+        {
+            public List<IrDedoDuroEvent> Events = new List<IrDedoDuroEvent>();
+            public FakeIrPublisher() : base(new KafkaProducer("localhost:9092", "ir-test")) { }
+            public override global::System.Threading.Tasks.Task PublishDedoDuro(IrDedoDuroEvent evt)
+            {
+                Events.Add(evt);
+                return global::System.Threading.Tasks.Task.CompletedTask;
+            }
+            public override global::System.Threading.Tasks.Task PublishVenda(IrVendaEvent evt) => global::System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        private ApplicationDbContext CreateContext()
+        {
+            var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            return new ApplicationDbContext(options);
+        }
+
         [Fact]
-        public void ExecutarCompra_ComCestaValida_GeraOrdens()
+        public void ExecutarCompra_ComCestaValida_GeraOrdensYDistribuicao()
         {
             var cwd = Directory.GetCurrentDirectory();
             var cotacoesDir = Path.Combine(cwd, "cotacoes");
             Directory.CreateDirectory(cotacoesDir);
 
-            // create cotahist for PETR4 and VALE3
             File.WriteAllText(Path.Combine(cotacoesDir, "COTAHIST_D25022026.TXT"), BuildLinhaValida("PETR4    "), System.Text.Encoding.GetEncoding("ISO-8859-1"));
             File.WriteAllText(Path.Combine(cotacoesDir, "COTAHIST_D25022026_VALE.TXT"), BuildLinhaValida("VALE3    "), System.Text.Encoding.GetEncoding("ISO-8859-1"));
 
             var clientes = new List<Cliente>
             {
-                new Cliente { Id = 1L, Nome = "A", ValorMensal = 300m },
-                new Cliente { Id = 2L, Nome = "B", ValorMensal = 300m }
+                new Cliente { Id = 1L, Nome = "A", ValorMensal = 300m, CPF = "123" },
+                new Cliente { Id = 2L, Nome = "B", ValorMensal = 300m, CPF = "456" }
             };
 
             var cesta = new CestaTopFive
@@ -64,14 +86,98 @@ namespace CompraProgramada.Tests
 
             var saldoMaster = new Dictionary<string, decimal>();
 
-            var motor = new MotorCompraService();
+            using var ctx = CreateContext();
+            var fakeIr = new FakeIrPublisher();
+            var motor = new MotorCompraService(ctx, fakeIr);
+
             var resultado = motor.ExecutarCompra(DateTime.UtcNow, clientes, cesta, saldoMaster);
 
             Assert.NotNull(resultado);
-            Assert.True(resultado.Ordens.Count >= 1);
-            Assert.Contains(resultado.Ordens, o => o.Ticker.StartsWith("PETR4", StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(2, resultado.ClientesDistribuidos.Count);
+            Assert.True(resultado.Ordens.Any());
+            Assert.Contains(resultado.Ordens, o => o.Ticker == "PETR4" || o.Ticker == "VALE3");
 
-            // cleanup
+            // check that ordens were persisted
+            var saved = ctx.OrdensCompra.Include(o => o.Itens).ToList();
+            Assert.True(saved.Count >= 1);
+            Assert.All(saved, o => Assert.Equal(StatusOrdem.Executada, o.Status));
+
+            var distribuicoes = ctx.Distribuicoes.Include(d => d.Itens).ToList();
+            Assert.True(distribuicoes.Count >= 1);
+
+            var irRegistros = ctx.IrRegistros.ToList();
+            Assert.True(irRegistros.Count >= 1);
+            Assert.Contains(irRegistros, i => i.Tipo == "DEDO_DURO");
+
+            // custódias devem ter sido preenchidas
+            foreach (var cliente in clientes)
+            {
+                Assert.NotNull(cliente.Custodia);
+                Assert.True(cliente.Custodia.Itens.Count > 0);
+            }
+
+            // IR events should have been published
+            Assert.True(fakeIr.Events.Count > 0);
+
+            try { Directory.Delete(cotacoesDir, true); } catch { }
+        }
+
+        [Fact]
+        public void ExecutarCompra_ConsomeSaldoMasterEPersisteNovoSaldo()
+        {
+            var cwd = Directory.GetCurrentDirectory();
+            var cotacoesDir = Path.Combine(cwd, "cotacoes");
+            Directory.CreateDirectory(cotacoesDir);
+            File.WriteAllText(Path.Combine(cotacoesDir, "COTAHIST_D25022026.TXT"), BuildLinhaValida("PETR4    "), System.Text.Encoding.GetEncoding("ISO-8859-1"));
+
+            var clientes = new List<Cliente>
+            {
+                new Cliente { Id = 10L, Nome = "Cliente Master", ValorMensal = 300m, CPF = "111" }
+            };
+
+            var cesta = new CestaTopFive
+            {
+                Itens = new List<CestaItem>
+                {
+                    new CestaItem { Ticker = "PETR4", Percentual = 100m }
+                }
+            };
+
+            using var ctx = CreateContext();
+            var contaMaster = new ContaGrafica
+            {
+                NumeroConta = "MASTER-001",
+                Tipo = ContaTipo.Master,
+                DataCriacao = DateTime.UtcNow
+            };
+            ctx.ContasGraficas.Add(contaMaster);
+            ctx.SaveChanges();
+
+            var custodiaMaster = new Custodia
+            {
+                ContaGraficaId = contaMaster.Id,
+                Itens = new List<CustodiaItem>
+                {
+                    new CustodiaItem { Ticker = "PETR4", Quantidade = 10m, PrecoMedio = 11.5m }
+                }
+            };
+            ctx.Custodias.Add(custodiaMaster);
+            ctx.SaveChanges();
+
+            var fakeIr = new FakeIrPublisher();
+            var motor = new MotorCompraService(ctx, fakeIr);
+
+            var saldoMaster = new Dictionary<string, decimal>();
+            var resultado = motor.ExecutarCompra(DateTime.UtcNow, clientes, cesta, saldoMaster);
+
+            Assert.NotNull(resultado);
+            Assert.Empty(resultado.Ordens); // saldo master cobriu a necessidade, sem compra adicional
+
+            var masterAtualizada = ctx.Custodias.Include(c => c.Itens).First(c => c.ContaGraficaId == contaMaster.Id);
+            var itemMaster = masterAtualizada.Itens.First(i => i.Ticker == "PETR4");
+            Assert.Equal(2m, itemMaster.Quantidade);
+            Assert.Equal(2m, saldoMaster["PETR4"]);
+
             try { Directory.Delete(cotacoesDir, true); } catch { }
         }
 
@@ -83,7 +189,6 @@ namespace CompraProgramada.Tests
                 new Cliente { Id = 1L, Nome = "A", ValorMensal = 300m }
             };
 
-            // ensure cotacoes directory exists (but contains no files for NONEXIST)
             var cotacoesDir = Path.Combine(Directory.GetCurrentDirectory(), "cotacoes");
             Directory.CreateDirectory(cotacoesDir);
 
@@ -95,7 +200,10 @@ namespace CompraProgramada.Tests
                 }
             };
 
-            var motor = new MotorCompraService();
+            using var ctx = CreateContext();
+            var fakeIr = new FakeIrPublisher();
+            var motor = new MotorCompraService(ctx, fakeIr);
+
             var ex = Assert.Throws<Exception>(() => motor.ExecutarCompra(DateTime.UtcNow, clientes, cesta, new Dictionary<string, decimal>()));
             Assert.StartsWith("COTACAO_NAO_ENCONTRADA", ex.Message);
             try { Directory.Delete(cotacoesDir, true); } catch { }

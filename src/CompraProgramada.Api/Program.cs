@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using CompraProgramada.Infrastructure.Data;
 using CompraProgramada.Infrastructure;
 using CompraProgramada.Application.Services;
+using CompraProgramada.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
@@ -32,6 +33,10 @@ builder.Services.AddSingleton<IrPublisher>();
 builder.Services.AddScoped<CestaService>();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<MotorCompraService>();
+builder.Services.AddScoped<IRebalanceService, RebalanceService>();
+builder.Services.AddScoped<RentabilidadeService>();
+builder.Services.AddSingleton<MotorAgendamentoStatusStore>();
+builder.Services.AddHostedService<MotorCompraAgendadoWorker>();
 
 var app = builder.Build();
 

@@ -4,6 +4,79 @@
     "D:\\Downloads\\Desafio_Itau_V2\\tests\\CompraProgramada.Tests\\CompraProgramada.Tests.csproj": {}
   },
   "projects": {
+    "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Api\\CompraProgramada.Api.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Api\\CompraProgramada.Api.csproj",
+        "projectName": "CompraProgramada.Api",
+        "projectPath": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Api\\CompraProgramada.Api.csproj",
+        "packagesPath": "C:\\Users\\Sandro\\.nuget\\packages\\",
+        "outputPath": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Api\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\Sandro\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Application\\CompraProgramada.Application.csproj": {
+                "projectPath": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Application\\CompraProgramada.Application.csproj"
+              },
+              "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Domain\\CompraProgramada.Domain.csproj": {
+                "projectPath": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Domain\\CompraProgramada.Domain.csproj"
+              },
+              "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Infrastructure\\CompraProgramada.Infrastructure.csproj": {
+                "projectPath": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Infrastructure\\CompraProgramada.Infrastructure.csproj"
+              }
+            }
+          }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[6.5.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
     "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Application\\CompraProgramada.Application.csproj": {
       "version": "1.0.0",
       "restore": {
@@ -217,6 +290,9 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
+              "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Api\\CompraProgramada.Api.csproj": {
+                "projectPath": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Api\\CompraProgramada.Api.csproj"
+              },
               "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Application\\CompraProgramada.Application.csproj": {
                 "projectPath": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Application\\CompraProgramada.Application.csproj"
               },
@@ -250,6 +326,10 @@
               "version": "[8.0.2, )"
             },
             "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[8.0.2, )"
+            },
+            "Microsoft.EntityFrameworkCore.InMemory": {
               "target": "Package",
               "version": "[8.0.2, )"
             },

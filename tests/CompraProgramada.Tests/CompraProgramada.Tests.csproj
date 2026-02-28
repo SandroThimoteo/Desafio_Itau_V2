@@ -11,10 +11,12 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.2" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CompraProgramada.Api\CompraProgramada.Api.csproj" />
     <ProjectReference Include="..\..\src\CompraProgramada.Domain\CompraProgramada.Domain.csproj" />
     <ProjectReference Include="..\..\src\CompraProgramada.Infrastructure\CompraProgramada.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\CompraProgramada.Application\CompraProgramada.Application.csproj" />

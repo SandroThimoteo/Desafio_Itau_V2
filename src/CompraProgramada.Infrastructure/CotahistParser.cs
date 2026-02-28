@@ -75,6 +75,9 @@ namespace CompraProgramada.Infrastructure
 
         public CotacaoB3? ObterCotacaoFechamento(string pastaCotacoes, string ticker)
         {
+            if (!Directory.Exists(pastaCotacoes))
+                return null;
+
             var arquivos = Directory.GetFiles(pastaCotacoes, "COTAHIST_D*.TXT")
                 .OrderByDescending(f => f)
                 .ToList();

@@ -16,6 +16,7 @@ namespace CompraProgramada.Infrastructure.Data
         public DbSet<Distribuicao> Distribuicoes { get; set; } = null!;
         public DbSet<Custodia> Custodias { get; set; } = null!;
         public DbSet<ContaGrafica> ContasGraficas { get; set; } = null!;
+        public DbSet<IrRegistro> IrRegistros { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -86,6 +87,18 @@ namespace CompraProgramada.Infrastructure.Data
             {
                 e.HasKey(d => d.Id);
                 e.HasMany(d => d.Itens).WithOne().HasForeignKey("DistribuicaoId").OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<IrRegistro>(e =>
+            {
+                e.HasKey(i => i.Id);
+                e.Property(i => i.Tipo).IsRequired().HasMaxLength(20);
+                e.Property(i => i.Ticker).HasMaxLength(20);
+                e.Property(i => i.MesReferencia).HasMaxLength(7);
+                e.Property(i => i.ValorOperacao).HasPrecision(18, 2);
+                e.Property(i => i.LucroLiquido).HasPrecision(18, 2);
+                e.Property(i => i.Aliquota).HasPrecision(10, 6);
+                e.Property(i => i.ValorIR).HasPrecision(18, 2);
             });
         }
     }

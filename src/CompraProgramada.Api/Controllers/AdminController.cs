@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using CompraProgramada.Application.Services;
 using CompraProgramada.Domain.Entities;
 using CompraProgramada.Infrastructure.Data;
@@ -14,16 +16,18 @@ namespace CompraProgramada.Api.Controllers
     public class CestaController : ControllerBase
     {
         private readonly CestaService _service;
+        private readonly IRebalanceService _rebalanceService;
         private readonly ApplicationDbContext _db;
 
-        public CestaController(CestaService service, ApplicationDbContext db)
+        public CestaController(CestaService service, IRebalanceService rebalanceService, ApplicationDbContext db)
         {
             _service = service;
+            _rebalanceService = rebalanceService;
             _db = db;
         }
 
         [HttpPost]
-        public ActionResult Cadastrar([FromBody] CestaRequest request)
+        public async Task<ActionResult> Cadastrar([FromBody] CestaRequest request, CancellationToken ct)
         {
             try
             {
@@ -36,11 +40,27 @@ namespace CompraProgramada.Api.Controllers
                 _db.Cestas.Add(cesta);
                 _db.SaveChanges();
 
-                return Created($"/api/admin/cesta/atual", new { mensagem = "Cesta cadastrada/alterada", id = cesta.Id });
+                RebalanceResultado? rebalance = null;
+                if (cestaAnterior != null)
+                {
+                    rebalance = await _rebalanceService.RebalancearPorMudancaDeCestaAsync(cesta.Id, DateTime.UtcNow, ct);
+                }
+
+                return Created($"/api/admin/cesta/atual", new
+                {
+                    mensagem = "Cesta cadastrada/alterada",
+                    id = cesta.Id,
+                    rebalanceamentoExecutado = cestaAnterior != null,
+                    resumoRebalanceamento = rebalance
+                });
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(new { erro = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Falha ao processar rebalanceamento apos alterar a cesta.", detalhe = ex.Message });
             }
         }
 
@@ -80,8 +100,23 @@ namespace CompraProgramada.Api.Controllers
         [HttpGet("custodia")]
         public ActionResult ConsultarCustodia()
         {
-            var custodias = _db.Custodias.Include(c => c.Itens).ToList();
-            return Ok(custodias);
+            var contaMaster = _db.ContasGraficas.FirstOrDefault(c => c.Tipo == ContaTipo.Master);
+            if (contaMaster == null)
+                return NotFound(new { erro = "Conta master nao encontrada" });
+
+            var custodiaMaster = _db.Custodias
+                .Include(c => c.Itens)
+                .FirstOrDefault(c => c.ContaGraficaId == contaMaster.Id);
+
+            if (custodiaMaster == null)
+                return Ok(new { contaMasterId = contaMaster.Id, numeroConta = contaMaster.NumeroConta, itens = new List<object>() });
+
+            return Ok(new
+            {
+                contaMasterId = contaMaster.Id,
+                numeroConta = contaMaster.NumeroConta,
+                itens = custodiaMaster.Itens.Select(i => new { i.Ticker, i.Quantidade, i.PrecoMedio })
+            });
         }
     }
 }
