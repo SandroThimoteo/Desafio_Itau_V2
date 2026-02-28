@@ -1,0 +1,151 @@
+@page "/cliente/adesao"
+@using CompraProgramada.Web.Services
+@inject CompraProgradadaApiService ApiService
+@inject NavigationManager Navigation
+
+<PageTitle>Aderir ao Produto - Compra Programada</PageTitle>
+
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">✨ Aderir ao Sistema de Compra Programada</h3>
+        </div>
+        <div class="card-body p-5">
+            <p class="mb-4">
+                Invista automaticamente em uma carteira recomendada de 5 ações Top Companies.
+                Escolha seu valor mensal e deixe conosco automatizar seus aportes.
+            </p>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @errorMessage
+                    <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(sucessoMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>✓ Adesão realizada com sucesso!</strong>
+                    <p>@sucessoMessage</p>
+                    <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo("/"))">
+                        Retornar ao início
+                    </button>
+                </div>
+            }
+            else
+            {
+                <form @onsubmit="Aderir">
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome Completo *</label>
+                        <input type="text" class="form-control" id="nome" 
+                               @bind="nome" 
+                               placeholder="Ex: João Silva"
+                               required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cpf" class="form-label">CPF (sem pontos/traços) *</label>
+                        <input type="text" class="form-control" id="cpf" 
+                               @bind="cpf" 
+                               placeholder="Ex: 12345678901"
+                               maxlength="11"
+                               required />
+                        <small class="form-text text-muted">Deve ser único no sistema</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" 
+                               @bind="email" 
+                               placeholder="seu@email.com"
+                               required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="valorMensal" class="form-label">Valor Mensal de Aporte (R$) *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" class="form-control" id="valorMensal" 
+                                   @bind="valorMensal" 
+                                   placeholder="300,00"
+                                   min="100"
+                                   step="10"
+                                   required />
+                        </div>
+                        <small class="form-text text-muted">
+                            Mínimo de R$ 100,00. Será dividido em 3 aportações (dias 5, 15 e 25).
+                        </small>
+                    </div>
+
+                    <div class="alert alert-info mb-4">
+                        <strong>ℹ️ Como funciona:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Seu aporte mensal será dividido em 3 parcelas (5º, 15º e 25º)</li>
+                            <li>Cada parcela será investida em 5 ações selecionadas</li>
+                            <li>Você pode alterar o valor mensal a qualquer momento</li>
+                            <li>Pode sair do produto sem perder suas ações</li>
+                        </ul>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status">
+                                <span class="visually-hidden">Processando...</span>
+                            </span>
+                        }
+                        Confirmar Adesão
+                    </button>
+
+                    <button type="button" class="btn btn-outline-secondary btn-lg w-100 mt-2" @onclick="@(() => Navigation.NavigateTo("/"))">
+                        Cancelar
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string nome = "";
+    private string cpf = "";
+    private string email = "";
+    private decimal valorMensal = 300m;
+    private string? errorMessage;
+    private string? sucessoMessage;
+    private bool isSubmitting = false;
+
+    private async Task Aderir()
+    {
+        if (string.IsNullOrWhiteSpace(nome) || string.IsNullOrWhiteSpace(cpf) || string.IsNullOrWhiteSpace(email) || valorMensal < 100)
+        {
+            errorMessage = "Todos os campos são obrigatórios e o valor mínimo é R$ 100,00";
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = null;
+        try
+        {
+            var cliente = await ApiService.AderirProdutoAsync(nome, cpf, email, valorMensal);
+            if (cliente != null)
+            {
+                sucessoMessage = $"Bem-vindo, {cliente.Nome}! Seu ID é: {cliente.Id}. Guarde este número para consultar sua carteira.";
+            }
+            else
+            {
+                errorMessage = "Erro ao processar adesão";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

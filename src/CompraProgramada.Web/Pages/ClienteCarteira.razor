@@ -1,0 +1,234 @@
+@page "/cliente/carteira"
+@using CompraProgramada.Web.Services
+@inject CompraProgradadaApiService ApiService
+@inject NavigationManager Navigation
+
+<PageTitle>Minha Carteira</PageTitle>
+
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>💼 Minha Carteira</h1>
+            <p class="text-muted">Visualize sua posição em ativos e rentabilidade</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo("/cliente/rentabilidade"))">
+                📈 Ver Rentabilidade Detalhada
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="form-group">
+                <label for="clienteId" class="form-label">ID do Cliente</label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="clienteId" 
+                           @bind="clienteId" 
+                           placeholder="Insira seu ID" />
+                    <button class="btn btn-primary" @onclick="CarregarCarteira">
+                        🔍 Consultar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="alert alert-info" role="alert">
+            <div class="spinner-border spinner-border-sm me-2" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            Carregando carteira...
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Erro:</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+
+    @if (carteira != null)
+    {
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title">Saldo Total</h6>
+                        <h4 class="text-primary">R$ @carteira.SaldoTotal.ToString("F2")</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title">P/L Total</h6>
+                        <h4 class="@(carteira.PLTotal >= 0 ? "text-success" : "text-danger")">
+                            R$ @carteira.PLTotal.ToString("F2")
+                        </h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title">Rentabilidade</h6>
+                        <h4 class="@(carteira.RentabilidadePercentual >= 0 ? "text-success" : "text-danger")">
+                            @carteira.RentabilidadePercentual.ToString("F2")%
+                        </h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title">Cliente</h6>
+                        <p class="card-text">@carteira.ClienteNome</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">📊 Posição por Ativo</h5>
+            </div>
+            <div class="card-body">
+                @if (carteira.Ativos.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ticker</th>
+                                    <th>Quantidade</th>
+                                    <th>Preço Médio</th>
+                                    <th>Valor Atual</th>
+                                    <th>P/L (R$)</th>
+                                    <th>P/L (%)</th>
+                                    <th>% Carteira</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ativo in carteira.Ativos)
+                                {
+                                    var plPercentual = ativo.PrecoMedio > 0 ? ((ativo.ValorAtual - ativo.PrecoMedio) / ativo.PrecoMedio) * 100 : 0;
+                                    var cssClass = ativo.PL >= 0 ? "text-success" : "text-danger";
+                                    <tr>
+                                        <td><strong>@ativo.Ticker</strong></td>
+                                        <td>@ativo.Quantidade.ToString("F2")</td>
+                                        <td>R$ @ativo.PrecoMedio.ToString("F2")</td>
+                                        <td>R$ @ativo.ValorAtual.ToString("F2")</td>
+                                        <td class="@cssClass"><strong>R$ @ativo.PL.ToString("F2")</strong></td>
+                                        <td class="@cssClass"><strong>@plPercentual.ToString("F2")%</strong></td>
+                                        <td>@ativo.Percentual.ToString("F2")%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="3"><strong>TOTAL</strong></td>
+                                    <td><strong>R$ @carteira.Ativos.Sum(a => a.ValorAtual).ToString("F2")</strong></td>
+                                    <td class="@(carteira.PLTotal >= 0 ? "text-success" : "text-danger")">
+                                        <strong>R$ @carteira.PLTotal.ToString("F2")</strong>
+                                    </td>
+                                    <td class="@(carteira.PLTotal >= 0 ? "text-success" : "text-danger")">
+                                        <strong>@(carteira.SaldoTotal > 0 ? ((carteira.PLTotal / (carteira.SaldoTotal - carteira.PLTotal)) * 100).ToString("F2") : "0.00")%</strong>
+                                    </td>
+                                    <td><strong>100.00%</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info mb-0">
+                        Nenhum ativo na carteira. Comece a investir!
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <button class="btn btn-warning btn-lg w-100" @onclick="@(() => Navigation.NavigateTo($"/cliente/alterar-valor/{clienteId}"))">
+                    ✏️ Alterar Valor Mensal
+                </button>
+            </div>
+            <div class="col-md-6">
+                <button class="btn btn-danger btn-lg w-100" @onclick="@(() => { if (confirmarSaida) SairDoProduto(); else confirmarSaida = true; })">
+                    @if (confirmarSaida)
+                    {
+                        <span>⚠️  Confirmar saída?</span>
+                    }
+                    else
+                    {
+                        <span>🚪 Sair do Produto</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private long clienteId = 0;
+    private CarteiraResponse? carteira;
+    private string? errorMessage;
+    private bool isLoading = false;
+    private bool confirmarSaida = false;
+
+    private async Task CarregarCarteira()
+    {
+        if (clienteId <= 0)
+        {
+            errorMessage = "Insira um ID válido";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            carteira = await ApiService.GetCarteiraAsync(clienteId);
+            if (carteira == null)
+            {
+                errorMessage = "Carteira não encontrada";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar carteira: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SairDoProduto()
+    {
+        try
+        {
+            var sucesso = await ApiService.SairDoProdutoAsync(clienteId);
+            if (sucesso)
+            {
+                errorMessage = "Você saiu do produto com sucesso. Sua posição em custódia foi mantida.";
+                carteira = null;
+                confirmarSaida = false;
+            }
+            else
+            {
+                errorMessage = "Erro ao sair do produto";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro: {ex.Message}";
+        }
+    }
+}
