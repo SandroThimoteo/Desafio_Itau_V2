@@ -32,7 +32,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AdicionarCliente_ComValorMensal_DeBordaMinima_DeveAceitar()
     {
         // Arrange
-        var clienteService = new ClienteService();
+        var clienteService = new ClienteService(_db);
 
         // Act
         var cliente = clienteService.AdicionarCliente(
@@ -51,7 +51,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AdicionarCliente_ComValorMensal_Fracionado_DeveAceitar()
     {
         // Arrange
-        var clienteService = new ClienteService();
+        var clienteService = new ClienteService(_db);
 
         // Act
         var cliente = clienteService.AdicionarCliente(
@@ -70,7 +70,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AdicionarCliente_ComValorMensal_VeryLarge_DeveAceitar()
     {
         // Arrange
-        var clienteService = new ClienteService();
+        var clienteService = new ClienteService(_db);
 
         // Act
         var cliente = clienteService.AdicionarCliente(
@@ -93,7 +93,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AdicionarCliente_ComValorMenor_DeveThrow(decimal valor)
     {
         // Arrange
-        var clienteService = new ClienteService();
+        var clienteService = new ClienteService(_db);
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() =>
@@ -105,7 +105,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AlterarValorMensal_ComSequenciaDeAumentosEQuedas_DeveAlternar()
     {
         // Arrange
-        var clienteService = new ClienteService();
+        var clienteService = new ClienteService(_db);
         var cliente = clienteService.AdicionarCliente(
             "João Silva",
             "12345678901",
@@ -132,7 +132,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void SairDoProduto_DeveRegistrarDataSaidaComTimestamp()
     {
         // Arrange
-        var clienteService = new ClienteService();
+        var clienteService = new ClienteService(_db);
         var cliente = clienteService.AdicionarCliente(
             "João Silva",
             "12345678901",

@@ -1,23 +1,33 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CompraProgramada.Domain.Entities;
+using CompraProgramada.Infrastructure.Data;
 
 namespace CompraProgramada.Application.Services
 {
     public class ClienteService
     {
-        // In a complete implementation these would be interfaces injected via DI
-        // for repository access. Here we just define method signatures.
+        private readonly ApplicationDbContext _db;
+
+        public ClienteService(ApplicationDbContext db)
+        {
+            _db = db ?? throw new ArgumentNullException(nameof(db));
+        }
 
         public Cliente AdicionarCliente(string nome, string cpf, string email, decimal valorMensal)
         {
             // validações básicas conforme as regras RN-001 a RN-006
             if (string.IsNullOrWhiteSpace(nome))
-                throw new ArgumentException("Nome obrigatório");
+                throw new ArgumentException("Nome obrigatório", nameof(nome));
             if (string.IsNullOrWhiteSpace(cpf))
-                throw new ArgumentException("CPF obrigatório");
+                throw new ArgumentException("CPF obrigatório", nameof(cpf));
             if (valorMensal < 100m)
-                throw new ArgumentException("Valor mensal mínimo é R$ 100,00");
+                throw new ArgumentException("Valor mensal mínimo é R$ 100,00", nameof(valorMensal));
+            
+            // RN-002: CPF deve ser único (validação de duplicidade)
+            if (_db.Clientes.Any(c => c.CPF == cpf))
+                throw new ArgumentException("CPF ja cadastrado no sistema.", "CLIENTE_CPF_DUPLICADO");
 
             var cliente = new Cliente
             {

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using CompraProgramada.Application.Services;
 using CompraProgramada.Api.Services;
 using CompraProgramada.Infrastructure.Data;
@@ -14,12 +15,14 @@ namespace CompraProgramada.Api.Controllers
     public class MotorController : ControllerBase
     {
         private readonly MotorCompraService _motor;
+        private readonly IRebalanceService _rebalanceService;
         private readonly MotorAgendamentoStatusStore _statusStore;
         private readonly ApplicationDbContext _db;
 
-        public MotorController(MotorCompraService motor, MotorAgendamentoStatusStore statusStore, ApplicationDbContext db)
+        public MotorController(MotorCompraService motor, IRebalanceService rebalanceService, MotorAgendamentoStatusStore statusStore, ApplicationDbContext db)
         {
             _motor = motor;
+            _rebalanceService = rebalanceService;
             _statusStore = statusStore;
             _db = db;
         }
@@ -41,6 +44,25 @@ namespace CompraProgramada.Api.Controllers
             try
             {
                 var resultado = _motor.ExecutarCompra(request.DataReferencia, clientesAtivos, cesta, saldoMaster);
+                return Ok(resultado);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = ex.Message });
+            }
+        }
+
+        [HttpPost("rebalancear-desvio")]
+        public async Task<ActionResult> RebalancearPorDesvio([FromBody] RebalanceRequest request)
+        {
+            try
+            {
+                // Tolerância padrão: 5% se não informada
+                decimal tolerancia = request.ToleranciaPercentual ?? 5m;
+                if (tolerancia < 0 || tolerancia > 100)
+                    return BadRequest(new { erro = "Tolerância deve estar entre 0 e 100%." });
+
+                var resultado = await _rebalanceService.RebalancearPorDesvioAsync(tolerancia, DateTime.UtcNow);
                 return Ok(resultado);
             }
             catch (Exception ex)
@@ -71,5 +93,10 @@ namespace CompraProgramada.Api.Controllers
     public class MotorRequest
     {
         public DateTime DataReferencia { get; set; }
+    }
+
+    public class RebalanceRequest
+    {
+        public decimal? ToleranciaPercentual { get; set; }
     }
 }

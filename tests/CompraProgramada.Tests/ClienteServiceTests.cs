@@ -1,16 +1,30 @@
 using System;
 using System.Collections.Generic;
 using Xunit;
+using Microsoft.EntityFrameworkCore;
 using CompraProgramada.Domain.Entities;
 using CompraProgramada.Application.Services;
+using CompraProgramada.Infrastructure.Data;
 
-public class ClienteServiceTests
+public class ClienteServiceTests : IDisposable
 {
     private readonly ClienteService _clienteService;
+    private readonly ApplicationDbContext _db;
 
     public ClienteServiceTests()
     {
-        _clienteService = new ClienteService();
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        _db = new ApplicationDbContext(options);
+        _db.Database.EnsureCreated();
+        _clienteService = new ClienteService(_db);
+    }
+
+    public void Dispose()
+    {
+        _db?.Dispose();
     }
 
     [Fact]
