@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CompraProgramada.Application.Services;
 using CompraProgramada.Domain.Entities;
 using CompraProgramada.Infrastructure.Data;
+using CompraProgramada.Api.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace CompraProgramada.Api.Controllers
@@ -27,7 +28,7 @@ namespace CompraProgramada.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> Cadastrar([FromBody] CestaRequest request, CancellationToken ct)
+        public async Task<ActionResult<CestaCreateResponse>> Cadastrar([FromBody] CestaRequest request, CancellationToken ct)
         {
             try
             {
@@ -35,48 +36,110 @@ namespace CompraProgramada.Api.Controllers
                 var cesta = _service.CriarOuAtualizarCesta(request.Nome, request.Itens, cestaAnterior);
 
                 if (cestaAnterior != null)
+                {
+                    cestaAnterior.Ativa = false;
+                    cestaAnterior.DataDesativacao = DateTime.UtcNow;
                     _db.Cestas.Update(cestaAnterior);
+                }
 
                 _db.Cestas.Add(cesta);
                 _db.SaveChanges();
 
-                RebalanceResultado? rebalance = null;
+                var ativosRemovidos = cestaAnterior?.Itens.Select(i => i.Ticker).ToList() ?? new List<string>();
+                var ativosAdicionados = cesta.Itens.Select(i => i.Ticker).ToList() ?? new List<string>();
+
+                var response = new CestaCreateResponse
+                {
+                    CestaId = cesta.Id,
+                    Nome = cesta.Nome,
+                    Ativa = cesta.Ativa,
+                    DataCriacao = cesta.DataCriacao,
+                    Itens = cesta.Itens.Select(i => new CestaItemDTO
+                    {
+                        Ticker = i.Ticker,
+                        Percentual = Math.Round(i.Percentual, 2)
+                    }).ToList(),
+                    RebalanceamentoDisparado = cestaAnterior != null,
+                    Mensagem = cestaAnterior == null ? "Primeira cesta cadastrada com sucesso." : $"Cesta atualizada. Rebalanceamento disparado para clientes ativos."
+                };
+
                 if (cestaAnterior != null)
                 {
-                    rebalance = await _rebalanceService.RebalancearPorMudancaDeCestaAsync(cesta.Id, DateTime.UtcNow, ct);
+                    response.CestaAnteriorDesativada = new CestaAnteriorDTO
+                    {
+                        CestaId = cestaAnterior.Id,
+                        Nome = cestaAnterior.Nome,
+                        DataDesativacao = cestaAnterior.DataDesativacao ?? DateTime.UtcNow
+                    };
+
+                    response.AtivosRemovidos = ativosRemovidos.Except(ativosAdicionados).ToList();
+                    response.AtivosAdicionados = ativosAdicionados.Except(ativosRemovidos).ToList();
                 }
 
-                return Created($"/api/admin/cesta/atual", new
-                {
-                    mensagem = "Cesta cadastrada/alterada",
-                    id = cesta.Id,
-                    rebalanceamentoExecutado = cestaAnterior != null,
-                    resumoRebalanceamento = rebalance
-                });
+                return Created($"/api/admin/cesta/atual", response);
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { erro = ex.Message });
+                return BadRequest(new { erro = ex.Message, codigo = "PERCENTUAIS_INVALIDOS" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { erro = "Falha ao processar rebalanceamento apos alterar a cesta.", detalhe = ex.Message });
+                return StatusCode(500, new { erro = "Falha ao processar cesta.", detalhe = ex.Message });
             }
         }
 
         [HttpGet("atual")]
-        public ActionResult ObterAtual()
+        public ActionResult<CestaAtualResponse> ObterAtual()
         {
             var cesta = _db.Cestas.Include(c => c.Itens).FirstOrDefault(c => c.Ativa);
-            if (cesta == null) return NotFound(new { erro = "Nenhuma cesta ativa encontrada" });
-            return Ok(cesta);
+            if (cesta == null) return NotFound(new { erro = "Nenhuma cesta ativa encontrada", codigo = "CESTA_NAO_ENCONTRADA" });
+
+            var parser = new CompraProgramada.Infrastructure.CotahistParser();
+
+            var response = new CestaAtualResponse
+            {
+                CestaId = cesta.Id,
+                Nome = cesta.Nome,
+                Ativa = cesta.Ativa,
+                DataCriacao = cesta.DataCriacao,
+                Itens = cesta.Itens.Select(i =>
+                {
+                    var cotacao = parser.ObterCotacaoFechamento("cotacoes", i.Ticker);
+                    return new CestaItemDTO
+                    {
+                        Ticker = i.Ticker,
+                        Percentual = Math.Round(i.Percentual, 2),
+                        CotacaoAtual = cotacao?.PrecoFechamento ?? 0m
+                    };
+                }).ToList()
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("historico")]
-        public ActionResult Historico()
+        public ActionResult<List<CestaHistoricoResponse>> Historico()
         {
-            var cestas = _db.Cestas.Include(c => c.Itens).OrderByDescending(c => c.DataCriacao).ToList();
-            return Ok(cestas);
+            var cestas = _db.Cestas
+                .Include(c => c.Itens)
+                .OrderByDescending(c => c.DataCriacao)
+                .ToList();
+
+            var response = cestas.Select(c => new CestaHistoricoResponse
+            {
+                CestaId = c.Id,
+                Nome = c.Nome,
+                Ativa = c.Ativa,
+                DataCriacao = c.DataCriacao,
+                DataDesativacao = c.DataDesativacao,
+                Itens = c.Itens.Select(i => new CestaItemDTO
+                {
+                    Ticker = i.Ticker,
+                    Percentual = Math.Round(i.Percentual, 2)
+                }).ToList()
+            }).ToList();
+
+            return Ok(new { cestas = response });
         }
     }
 
@@ -98,25 +161,56 @@ namespace CompraProgramada.Api.Controllers
         }
 
         [HttpGet("custodia")]
-        public ActionResult ConsultarCustodia()
+        public ActionResult<ContaMasterResponse> ConsultarCustodia()
         {
             var contaMaster = _db.ContasGraficas.FirstOrDefault(c => c.Tipo == ContaTipo.Master);
             if (contaMaster == null)
-                return NotFound(new { erro = "Conta master nao encontrada" });
+                return NotFound(new { erro = "Conta master não encontrada", codigo = "CONTA_MASTER_NAO_ENCONTRADA" });
 
             var custodiaMaster = _db.Custodias
                 .Include(c => c.Itens)
                 .FirstOrDefault(c => c.ContaGraficaId == contaMaster.Id);
 
-            if (custodiaMaster == null)
-                return Ok(new { contaMasterId = contaMaster.Id, numeroConta = contaMaster.NumeroConta, itens = new List<object>() });
+            var parser = new CompraProgramada.Infrastructure.CotahistParser();
+            decimal valorTotalResiduo = 0m;
 
-            return Ok(new
+            var custodiaItems = new List<CustodiaItemDTO>();
+            if (custodiaMaster != null)
             {
-                contaMasterId = contaMaster.Id,
-                numeroConta = contaMaster.NumeroConta,
-                itens = custodiaMaster.Itens.Select(i => new { i.Ticker, i.Quantidade, i.PrecoMedio })
-            });
+                foreach (var item in custodiaMaster.Itens)
+                {
+                    var tickerBase = item.Ticker.EndsWith("F") ? item.Ticker[..^1] : item.Ticker;
+                    var cotacao = parser.ObterCotacaoFechamento("cotacoes", tickerBase)
+                                 ?? parser.ObterCotacaoFechamento("cotacoes", item.Ticker);
+
+                    var precoAtual = cotacao?.PrecoFechamento ?? item.PrecoMedio;
+                    var valorAtual = item.Quantidade * precoAtual;
+                    valorTotalResiduo += valorAtual;
+
+                    custodiaItems.Add(new CustodiaItemDTO
+                    {
+                        Ticker = item.Ticker,
+                        Quantidade = item.Quantidade,
+                        PrecoMedio = Math.Round(item.PrecoMedio, 2),
+                        ValorAtual = Math.Round(valorAtual, 2),
+                        Origem = "Residuo distribuicao"
+                    });
+                }
+            }
+
+            var response = new ContaMasterResponse
+            {
+                ContaMaster = new ContaMasterDTO
+                {
+                    Id = contaMaster.Id,
+                    NumeroConta = contaMaster.NumeroConta,
+                    Tipo = "MASTER"
+                },
+                Custodia = custodiaItems,
+                ValorTotalResiduo = Math.Round(valorTotalResiduo, 2)
+            };
+
+            return Ok(response);
         }
     }
 }

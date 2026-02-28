@@ -1024,9 +1024,6 @@ D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compresse
 D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compressed\l3umqgnvg3-{0}-tptq2av103-tptq2av103.gz
 D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compressed\eilkuqdpl3-{0}-lfu7j35m59-lfu7j35m59.gz
 D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compressed\944fm72wrm-{0}-oyz0vx2fzb-oyz0vx2fzb.gz
-D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compressed\ze0f2wxsse-{0}-vjbygr0w9k-vjbygr0w9k.gz
-D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compressed\vzpyn4zvuw-{0}-drd1uui1qb-drd1uui1qb.gz
-D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compressed\69g2apcptr-{0}-e424lmxfzi-e424lmxfzi.gz
 D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\staticwebassets.build.json
 D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\staticwebassets.build.json.cache
 D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\staticwebassets.development.json
@@ -1037,3 +1034,6 @@ D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\CompraPro
 D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\refint\CompraProgramada.Web.dll
 D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\CompraProgramada.Web.pdb
 D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\ref\CompraProgramada.Web.dll
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compressed\ze0f2wxsse-{0}-gvl0v0pp0f-gvl0v0pp0f.gz
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compressed\vzpyn4zvuw-{0}-a5ntxxnjgc-a5ntxxnjgc.gz
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Web\obj\Debug\net8.0\compressed\69g2apcptr-{0}-5gnm0tkw2m-5gnm0tkw2m.gz

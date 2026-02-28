@@ -1,0 +1,6 @@
+{
+  "CompraProgramada.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Api",
+  "CompraProgramada.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Application",
+  "CompraProgramada.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Domain",
+  "CompraProgramada.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\Downloads\\Desafio_Itau_V2\\src\\CompraProgramada.Infrastructure"
+}

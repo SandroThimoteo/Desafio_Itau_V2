@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using CompraProgramada.Application.Services;
 using CompraProgramada.Domain.Entities;
 using CompraProgramada.Infrastructure.Data;
+using CompraProgramada.Api.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace CompraProgramada.Api.Controllers
@@ -24,14 +25,33 @@ namespace CompraProgramada.Api.Controllers
         }
 
         [HttpPost("adesao")]
-        public ActionResult<Cliente> Adesao([FromBody] AdesaoRequest request)
+        public ActionResult<AdesaoResponse> Adesao([FromBody] AdesaoRequest request)
         {
             try
             {
                 var cliente = _service.AdicionarCliente(request.Nome, request.CPF, request.Email, request.ValorMensal);
                 _db.Clientes.Add(cliente);
                 _db.SaveChanges();
-                return CreatedAtAction(nameof(ConsultarCarteira), new { clienteId = cliente.Id }, cliente);
+
+                var response = new AdesaoResponse
+                {
+                    ClienteId = cliente.Id,
+                    Nome = cliente.Nome,
+                    CPF = cliente.CPF,
+                    Email = cliente.Email,
+                    ValorMensal = cliente.ValorMensal,
+                    Ativo = cliente.Ativo,
+                    DataAdesao = cliente.DataAdesao,
+                    ContaGrafica = new ContaGraficaDTO
+                    {
+                        Id = cliente.ContaGrafica.Id,
+                        NumeroConta = cliente.ContaGrafica.NumeroConta,
+                        Tipo = cliente.ContaGrafica.Tipo.ToString().ToUpper(),
+                        DataCriacao = cliente.ContaGrafica.DataCriacao
+                    }
+                };
+
+                return CreatedAtAction(nameof(ConsultarCarteira), new { clienteId = cliente.Id }, response);
             }
             catch (ArgumentException ex)
             {
@@ -40,16 +60,26 @@ namespace CompraProgramada.Api.Controllers
         }
 
         [HttpPost("{clienteId}/saida")]
-        public ActionResult Saida(long clienteId)
+        public ActionResult<SaidaResponse> Saida(long clienteId)
         {
             var cliente = _db.Clientes.Find(clienteId);
-            if (cliente == null) return NotFound(new { erro = "Cliente não encontrado" });
+            if (cliente == null) return NotFound(new { erro = "Cliente não encontrado.", codigo = "CLIENTE_NAO_ENCONTRADO" });
 
             try
             {
                 _service.SairDoProduto(cliente);
                 _db.SaveChanges();
-                return Ok(new { clienteId, ativo = false, dataSaida = cliente.DataSaida, mensagem = "Adesao encerrada. Sua posicao em custodia foi mantida." });
+
+                var response = new SaidaResponse
+                {
+                    ClienteId = clienteId,
+                    Nome = cliente.Nome,
+                    Ativo = false,
+                    DataSaida = cliente.DataSaida ?? DateTime.UtcNow,
+                    Mensagem = "Adesao encerrada. Sua posicao em custodia foi mantida."
+                };
+
+                return Ok(response);
             }
             catch (InvalidOperationException ex)
             {
@@ -58,45 +88,190 @@ namespace CompraProgramada.Api.Controllers
         }
 
         [HttpPut("{clienteId}/valor-mensal")]
-        public ActionResult AlterarValor(long clienteId, [FromBody] AlterarValorRequest request)
+        public ActionResult<AlterarValorResponse> AlterarValor(long clienteId, [FromBody] AlterarValorRequest request)
         {
             var cliente = _db.Clientes.Find(clienteId);
-            if (cliente == null) return NotFound(new { erro = "Cliente não encontrado" });
+            if (cliente == null) return NotFound(new { erro = "Cliente não encontrado", codigo = "CLIENTE_NAO_ENCONTRADO" });
 
             var anterior = cliente.ValorMensal;
             _service.AlterarValorMensal(cliente, request.NovoValorMensal);
             _db.SaveChanges();
 
-            return Ok(new { clienteId, valorMensalAnterior = anterior, valorMensalNovo = request.NovoValorMensal, dataAlteracao = DateTime.UtcNow, mensagem = "Valor mensal atualizado. O novo valor sera considerado a partir da proxima data de compra." });
+            var response = new AlterarValorResponse
+            {
+                ClienteId = clienteId,
+                ValorMensalAnterior = anterior,
+                ValorMensalNovo = request.NovoValorMensal,
+                DataAlteracao = DateTime.UtcNow,
+                Mensagem = "Valor mensal atualizado. O novo valor sera considerado a partir da proxima data de compra."
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("{clienteId}/carteira")]
-        public ActionResult ConsultarCarteira(long clienteId)
+        public ActionResult<CarteiraResponse> ConsultarCarteira(long clienteId)
         {
             var cliente = _db.Clientes
                 .Include(c => c.Custodia)
+                .ThenInclude(c => c.Itens)
                 .FirstOrDefault(c => c.Id == clienteId);
 
-            if (cliente == null) return NotFound(new { erro = "Cliente não encontrado" });
+            if (cliente == null) return NotFound(new { erro = "Cliente não encontrado", codigo = "CLIENTE_NAO_ENCONTRADO" });
 
-            return Ok(new
+            var parser = new CompraProgramada.Infrastructure.CotahistParser();
+            var ativos = new List<AtivoCarteiraDTO>();
+
+            decimal valorTotalInvestido = 0m;
+            decimal valorAtualCarteira = 0m;
+
+            foreach (var item in cliente.Custodia?.Itens ?? new List<CustodiaItem>())
             {
-                clienteId = cliente.Id,
-                nome = cliente.Nome,
-                valorMensal = cliente.ValorMensal,
-                ativo = cliente.Ativo,
-                custodia = cliente.Custodia?.Itens
-            });
+                var tickerBase = RemoverSufixoFracionario(item.Ticker);
+                var cotacao = parser.ObterCotacaoFechamento("cotacoes", tickerBase)
+                             ?? parser.ObterCotacaoFechamento("cotacoes", item.Ticker);
+
+                var precoAtual = cotacao?.PrecoFechamento ?? item.PrecoMedio;
+                var valorInvestido = item.Quantidade * item.PrecoMedio;
+                var valorAtual = item.Quantidade * precoAtual;
+                var pl = valorAtual - valorInvestido;
+                var plPercentual = valorInvestido <= 0 ? 0m : (pl / valorInvestido) * 100m;
+
+                valorTotalInvestido += valorInvestido;
+                valorAtualCarteira += valorAtual;
+
+                ativos.Add(new AtivoCarteiraDTO
+                {
+                    Ticker = item.Ticker,
+                    Quantidade = item.Quantidade,
+                    PrecoMedio = Math.Round(item.PrecoMedio, 2),
+                    CotacaoAtual = Math.Round(precoAtual, 2),
+                    ValorAtual = Math.Round(valorAtual, 2),
+                    Pl = Math.Round(pl, 2),
+                    PlPercentual = Math.Round(plPercentual, 2),
+                    ComposicaoCarteira = valorAtualCarteira > 0 ? Math.Round((valorAtual / valorAtualCarteira) * 100m, 2) : 0m
+                });
+            }
+
+            // Recalcular composição (soma dos valores atuais para percentual correto)
+            foreach (var ativo in ativos)
+            {
+                ativo.ComposicaoCarteira = valorAtualCarteira > 0 ? Math.Round((ativo.ValorAtual / valorAtualCarteira) * 100m, 2) : 0m;
+            }
+
+            var plTotal = valorAtualCarteira - valorTotalInvestido;
+            var rentabilidade = valorTotalInvestido > 0 ? (plTotal / valorTotalInvestido) * 100m : 0m;
+
+            var response = new CarteiraResponse
+            {
+                ClienteId = cliente.Id,
+                Nome = cliente.Nome,
+                ContaGrafica = cliente.ContaGrafica.NumeroConta,
+                DataConsulta = DateTime.UtcNow,
+                Resumo = new ResumoCarteiraDTO
+                {
+                    ValorTotalInvestido = Math.Round(valorTotalInvestido, 2),
+                    ValorAtualCarteira = Math.Round(valorAtualCarteira, 2),
+                    PlTotal = Math.Round(plTotal, 2),
+                    RentabilidadePercentual = Math.Round(rentabilidade, 2)
+                },
+                Ativos = ativos
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("{clienteId}/rentabilidade")]
-        public ActionResult ConsultarRentabilidade(long clienteId)
+        public ActionResult<RentabilidadeResponse> ConsultarRentabilidade(long clienteId)
         {
-            var resultado = _rentabilidadeService.Calcular(clienteId);
-            if (resultado == null)
-                return NotFound(new { erro = "Cliente não encontrado" });
+            var cliente = _db.Clientes
+                .Include(c => c.Custodia)
+                .ThenInclude(c => c.Itens)
+                .FirstOrDefault(c => c.Id == clienteId);
 
-            return Ok(resultado);
+            if (cliente == null)
+                return NotFound(new { erro = "Cliente não encontrado", codigo = "CLIENTE_NAO_ENCONTRADO" });
+
+            var parser = new CompraProgramada.Infrastructure.CotahistParser();
+            var itens = new List<AtivoCarteiraDTO>();
+            decimal valorTotalInvestido = 0m;
+            decimal valorAtualCarteira = 0m;
+
+            foreach (var item in cliente.Custodia?.Itens ?? new List<CustodiaItem>())
+            {
+                var tickerBase = RemoverSufixoFracionario(item.Ticker);
+                var cotacao = parser.ObterCotacaoFechamento("cotacoes", tickerBase)
+                             ?? parser.ObterCotacaoFechamento("cotacoes", item.Ticker);
+
+                var precoAtual = cotacao?.PrecoFechamento ?? item.PrecoMedio;
+                var valorInvestido = item.Quantidade * item.PrecoMedio;
+                var valorAtual = item.Quantidade * precoAtual;
+
+                valorTotalInvestido += valorInvestido;
+                valorAtualCarteira += valorAtual;
+            }
+
+            var plTotal = valorAtualCarteira - valorTotalInvestido;
+            var rentabilidadeTotal = valorTotalInvestido > 0 ? (plTotal / valorTotalInvestido) * 100m : 0m;
+
+            var ordens = _db.OrdensCompra
+                .Where(o => o.ClienteId == clienteId)
+                .OrderBy(o => o.DataCriacao)
+                .ToList();
+
+            var historicoAportes = new List<AporteDTO>();
+            var evolucaoCarteira = new List<EvolucaoCarteiraDTO>();
+
+            decimal acumuladoInvestido = 0m;
+            int numeroAporte = 1;
+            int totalAportes = ordens.Count;
+
+            foreach (var ordem in ordens)
+            {
+                acumuladoInvestido += ordem.ValorTotal;
+
+                historicoAportes.Add(new AporteDTO
+                {
+                    Data = ordem.DataCriacao.ToString("yyyy-MM-dd"),
+                    Valor = Math.Round(ordem.ValorTotal, 2),
+                    Parcela = $"{numeroAporte}/{totalAportes}"
+                });
+
+                var rentabilidadeAtual = acumuladoInvestido > 0 ? ((valorAtualCarteira - acumuladoInvestido) / acumuladoInvestido) * 100m : 0m;
+
+                evolucaoCarteira.Add(new EvolucaoCarteiraDTO
+                {
+                    Data = ordem.DataCriacao.ToString("yyyy-MM-dd"),
+                    ValorCarteira = Math.Round(valorAtualCarteira, 2),
+                    ValorInvestido = Math.Round(acumuladoInvestido, 2),
+                    Rentabilidade = Math.Round(rentabilidadeAtual, 2)
+                });
+
+                numeroAporte++;
+            }
+
+            var response = new RentabilidadeResponse
+            {
+                ClienteId = cliente.Id,
+                Nome = cliente.Nome,
+                DataConsulta = DateTime.UtcNow,
+                Rentabilidade = new RentabilidadeSummaryDTO
+                {
+                    ValorTotalInvestido = Math.Round(valorTotalInvestido, 2),
+                    ValorAtualCarteira = Math.Round(valorAtualCarteira, 2),
+                    PlTotal = Math.Round(plTotal, 2),
+                    RentabilidadePercentual = Math.Round(rentabilidadeTotal, 2)
+                },
+                HistoricoAportes = historicoAportes,
+                EvolucaoCarteira = evolucaoCarteira
+            };
+
+            return Ok(response);
+        }
+
+        private string RemoverSufixoFracionario(string ticker)
+        {
+            return ticker.EndsWith("F") ? ticker[..^1] : ticker;
         }
     }
 

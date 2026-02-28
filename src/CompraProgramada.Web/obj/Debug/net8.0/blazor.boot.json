@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "CompraProgramada.Web",
   "resources": {
-    "hash": "sha256-i1jJJy1wgbQA4ct54Cw9isYkJkqdE/7i32ePyplWf1U=",
+    "hash": "sha256-Xe/w3O0s1s5JaGtNYF2r4wYvPHMKkZChNygX3Zhm9dQ=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-4g0GzvOXSwZvTLca4PrWJkoeltz+V9IF/hEFDcnVros="
     },
@@ -209,10 +209,10 @@
       "mscorlib.wasm": "sha256-OWQk7msdg0kG9vfJqVNUrPJ8JkyUipH2afbnYJLsKjk=",
       "netstandard.wasm": "sha256-+Ya7AWY6kwjwbQw9fHax9L8Qnn+UZKQF05aZE4ZOXiY=",
       "System.Private.CoreLib.wasm": "sha256-ouVBjy2oz9hC308fAFLns0mvmtyaeUDXt3C5DAk1muc=",
-      "CompraProgramada.Web.wasm": "sha256-+8rC8C75LJQQqJ8g/fbbIKgX6l7iwrDHJdDbUUlukos="
+      "CompraProgramada.Web.wasm": "sha256-REIslWEjlez4HngZcxMQuBxM9pdqeAGA7DzPkqkdfew="
     },
     "pdb": {
-      "CompraProgramada.Web.pdb": "sha256-F46rXsQKwg2Tno5zBj+kH76ulckR0QyzJEfVoorpcHk="
+      "CompraProgramada.Web.pdb": "sha256-ktCUdT4hr7nkcWjpqReyoP7RpsuREqKnUcz8M96/6c0="
     }
   },
   "cacheBootResources": true,

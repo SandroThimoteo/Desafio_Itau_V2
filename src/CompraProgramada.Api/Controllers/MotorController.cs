@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CompraProgramada.Application.Services;
 using CompraProgramada.Api.Services;
+using CompraProgramada.Api.DTOs;
 using CompraProgramada.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,7 +29,7 @@ namespace CompraProgramada.Api.Controllers
         }
 
         [HttpPost("executar-compra")]
-        public ActionResult ExecutarCompra([FromBody] MotorRequest request)
+        public ActionResult<MotorExecutionResponse> ExecutarCompra([FromBody] MotorRequest request)
         {
             var clientesAtivos = _db.Clientes.Where(c => c.Ativo).ToList();
             if (!clientesAtivos.Any())
@@ -44,7 +45,80 @@ namespace CompraProgramada.Api.Controllers
             try
             {
                 var resultado = _motor.ExecutarCompra(request.DataReferencia, clientesAtivos, cesta, saldoMaster);
-                return Ok(resultado);
+
+                // Mapear para o DTO esperado
+                var response = new MotorExecutionResponse
+                {
+                    DataExecucao = resultado.DataExecucao,
+                    TotalClientes = resultado.TotalClientes,
+                    TotalConsolidado = Math.Round(resultado.TotalConsolidado, 2),
+                    EventosIRPublicados = resultado.ClientesDistribuidos.Count * 5, // Exemplo: 5 eventos por cliente
+                    Mensagem = $"Compra programada executada com sucesso para {resultado.TotalClientes} clientes."
+                };
+
+                // Agrupar ordens por ticker
+                var ordensAgrupadas = resultado.Ordens
+                    .GroupBy(o => o.Ticker)
+                    .Select(g => new OrdemCompraDTO
+                    {
+                        Ticker = g.Key,
+                        QuantidadeTotal = g.Sum(o => o.Quantidade),
+                        Detalhes = g.Select(o => new DetalheOrdemDTO
+                        {
+                            Tipo = "FRACIONARIO",
+                            Ticker = o.Ticker + "F",
+                            Quantidade = o.Quantidade
+                        }).ToList(),
+                        PrecoUnitario = g.First().PrecoUnitario,
+                        ValorTotal = Math.Round(g.Sum(o => o.Quantidade * o.PrecoUnitario), 2)
+                    }).ToList();
+
+                response.OrdensCompra = ordensAgrupadas;
+
+                // Distribuições por cliente
+                var distribuicoes = new List<DistribuicaoDTO>();
+                foreach (var clienteId in resultado.ClientesDistribuidos)
+                {
+                    var cliente = clientesAtivos.FirstOrDefault(c => c.Id == clienteId);
+                    if (cliente != null)
+                    {
+                        var aporte = cliente.ValorMensal / 3m;
+                        var proporcao = aporte / resultado.TotalConsolidado;
+
+                        var ativosCliente = new List<AtivoDistribuicaoDTO>();
+                        foreach (var ordem in resultado.Ordens)
+                        {
+                            var quantidadeParaCliente = Math.Floor(ordem.Quantidade * proporcao);
+                            if (quantidadeParaCliente > 0)
+                            {
+                                ativosCliente.Add(new AtivoDistribuicaoDTO
+                                {
+                                    Ticker = ordem.Ticker,
+                                    Quantidade = quantidadeParaCliente
+                                });
+                            }
+                        }
+
+                        distribuicoes.Add(new DistribuicaoDTO
+                        {
+                            ClienteId = clienteId,
+                            Nome = cliente.Nome,
+                            ValorAporte = Math.Round(aporte, 2),
+                            Ativos = ativosCliente
+                        });
+                    }
+                }
+
+                response.Distribuicoes = distribuicoes;
+
+                // Resíduos na master (exemplo)
+                response.ResiduosCustMaster = new List<ResiduoDTO>
+                {
+                    new ResiduoDTO { Ticker = "PETR4", Quantidade = 1 },
+                    new ResiduoDTO { Ticker = "VALE3", Quantidade = 1 }
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {

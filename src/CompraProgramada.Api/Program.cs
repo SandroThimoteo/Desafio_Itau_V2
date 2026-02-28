@@ -17,6 +17,18 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
+// CORS — permitir requisições do frontend Blazor
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazorFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5288", "http://localhost:5289")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 // add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -65,6 +77,9 @@ app.UseDeveloperExceptionPage();
 
 // Middleware de Correlation ID para rastreamento de requisições
 app.UseMiddleware<CorrelationIdMiddleware>();
+
+// Habilitar CORS
+app.UseCors("AllowBlazorFrontend");
 
 app.UseSwagger();
 app.UseSwaggerUI();
