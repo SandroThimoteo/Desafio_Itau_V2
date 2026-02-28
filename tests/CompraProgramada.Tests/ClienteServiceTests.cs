@@ -19,7 +19,7 @@ public class ClienteServiceTests : IDisposable
 
         _db = new ApplicationDbContext(options);
         _db.Database.EnsureCreated();
-        _clienteService = new ClienteService(_db);
+        _clienteService = new ClienteService(_db, LoggerTestHelper.CreateMockLogger<ClienteService>());
     }
 
     public void Dispose()

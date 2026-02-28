@@ -11,7 +11,7 @@ public class CestaServiceTests
 
     public CestaServiceTests()
     {
-        _cestaService = new CestaService();
+        _cestaService = new CestaService(LoggerTestHelper.CreateMockLogger<CestaService>());
     }
 
     [Fact]

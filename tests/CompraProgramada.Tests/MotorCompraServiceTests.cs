@@ -88,7 +88,7 @@ namespace CompraProgramada.Tests
 
             using var ctx = CreateContext();
             var fakeIr = new FakeIrPublisher();
-            var motor = new MotorCompraService(ctx, fakeIr);
+            var motor = new MotorCompraService(ctx, fakeIr, LoggerTestHelper.CreateMockLogger<MotorCompraService>());
 
             var resultado = motor.ExecutarCompra(DateTime.UtcNow, clientes, cesta, saldoMaster);
 
@@ -165,7 +165,7 @@ namespace CompraProgramada.Tests
             ctx.SaveChanges();
 
             var fakeIr = new FakeIrPublisher();
-            var motor = new MotorCompraService(ctx, fakeIr);
+            var motor = new MotorCompraService(ctx, fakeIr, LoggerTestHelper.CreateMockLogger<MotorCompraService>());
 
             var saldoMaster = new Dictionary<string, decimal>();
             var resultado = motor.ExecutarCompra(DateTime.UtcNow, clientes, cesta, saldoMaster);
@@ -202,7 +202,7 @@ namespace CompraProgramada.Tests
 
             using var ctx = CreateContext();
             var fakeIr = new FakeIrPublisher();
-            var motor = new MotorCompraService(ctx, fakeIr);
+            var motor = new MotorCompraService(ctx, fakeIr, LoggerTestHelper.CreateMockLogger<MotorCompraService>());
 
             var ex = Assert.Throws<Exception>(() => motor.ExecutarCompra(DateTime.UtcNow, clientes, cesta, new Dictionary<string, decimal>()));
             Assert.StartsWith("COTACAO_NAO_ENCONTRADA", ex.Message);

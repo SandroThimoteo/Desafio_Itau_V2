@@ -70,7 +70,7 @@ namespace CompraProgramada.Tests
         public async Task RebalancearPorMudancaDeCestaAsync_CestaInvalida_RetornaMensagem()
         {
             using var ctx = CreateContext();
-            var service = new RebalanceService(ctx, new FakeIrPublisher());
+            var service = new RebalanceService(ctx, new FakeIrPublisher(), LoggerTestHelper.CreateMockLogger<RebalanceService>());
 
             var result = await service.RebalancearPorMudancaDeCestaAsync(9999, DateTime.UtcNow);
 
@@ -124,7 +124,7 @@ namespace CompraProgramada.Tests
             ctx.Clientes.Add(cliente);
             ctx.SaveChanges();
 
-            var service = new RebalanceService(ctx, new FakeIrPublisher());
+            var service = new RebalanceService(ctx, new FakeIrPublisher(), LoggerTestHelper.CreateMockLogger<RebalanceService>());
 
             var result = await service.RebalancearPorMudancaDeCestaAsync(cesta.Id, DateTime.UtcNow);
 
@@ -188,7 +188,7 @@ namespace CompraProgramada.Tests
             ctx.Clientes.Add(cliente);
             ctx.SaveChanges();
 
-            var service = new RebalanceService(ctx, fakeIr);
+            var service = new RebalanceService(ctx, fakeIr, LoggerTestHelper.CreateMockLogger<RebalanceService>());
             var result = await service.RebalancearPorMudancaDeCestaAsync(cesta.Id, DateTime.UtcNow);
 
             Assert.True(result.EventosIrPublicados >= 1);

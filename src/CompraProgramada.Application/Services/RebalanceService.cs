@@ -8,6 +8,7 @@ using CompraProgramada.Domain.Services;
 using CompraProgramada.Infrastructure;
 using CompraProgramada.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace CompraProgramada.Application.Services
 {
@@ -16,15 +17,23 @@ namespace CompraProgramada.Application.Services
         private readonly ApplicationDbContext _db;
         private readonly IrPublisher _irPublisher;
         private readonly CotahistParser _parser = new CotahistParser();
+        private readonly ILogger<RebalanceService> _logger;
 
-        public RebalanceService(ApplicationDbContext db, IrPublisher irPublisher)
+        public RebalanceService(ApplicationDbContext db, IrPublisher irPublisher, ILogger<RebalanceService> logger)
         {
             _db = db;
             _irPublisher = irPublisher;
+            _logger = logger;
         }
 
         public async Task<RebalanceResultado> RebalancearPorMudancaDeCestaAsync(long cestaId, DateTime dataReferencia, CancellationToken ct = default)
         {
+            _logger.LogInformation(
+                "Iniciando rebalanceamento por mudança de cesta - CestaId: {CestaId}, DataReferencia: {DataReferencia}",
+                cestaId,
+                dataReferencia.Date
+            );
+
             var resultado = new RebalanceResultado();
 
             var cesta = await _db.Cestas
@@ -33,6 +42,7 @@ namespace CompraProgramada.Application.Services
 
             if (cesta == null)
             {
+                _logger.LogError("Cesta não encontrada - CestaId: {CestaId}", cestaId);
                 resultado.Mensagens.Add("Cesta informada nao encontrada.");
                 return resultado;
             }
@@ -44,8 +54,11 @@ namespace CompraProgramada.Application.Services
                 .ToListAsync(ct);
 
             resultado.ClientesProcessados = clientes.Count;
-
-            foreach (var cliente in clientes)
+            
+            _logger.LogInformation(
+                "Rebalanceamento iniciado para {ClientesCount} clientes ativos",
+                clientes.Count
+            );            foreach (var cliente in clientes)
             {
                 if (cliente.Custodia == null)
                     continue;

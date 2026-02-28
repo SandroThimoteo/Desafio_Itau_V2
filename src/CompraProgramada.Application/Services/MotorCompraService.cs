@@ -6,6 +6,7 @@ using CompraProgramada.Domain.Services;
 using CompraProgramada.Infrastructure;
 using CompraProgramada.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace CompraProgramada.Application.Services
 {
@@ -14,11 +15,13 @@ namespace CompraProgramada.Application.Services
         private readonly CotahistParser _parser = new CotahistParser();
         private readonly ApplicationDbContext _db;
         private readonly IrPublisher _irPublisher;
+        private readonly ILogger<MotorCompraService> _logger;
 
-        public MotorCompraService(ApplicationDbContext db, IrPublisher irPublisher)
+        public MotorCompraService(ApplicationDbContext db, IrPublisher irPublisher, ILogger<MotorCompraService> logger)
         {
             _db = db;
             _irPublisher = irPublisher;
+            _logger = logger;
         }
 
         /// <summary>
@@ -27,6 +30,12 @@ namespace CompraProgramada.Application.Services
         /// </summary>
         public MotorResultado ExecutarCompra(DateTime dataReferencia, List<Cliente> clientesAtivos, CestaTopFive cesta, Dictionary<string, decimal> saldoMaster)
         {
+            _logger.LogInformation(
+                "Iniciando execução do motor de compra para {ClientesCount} clientes em {DataReferencia}",
+                clientesAtivos.Count,
+                dataReferencia.Date
+            );
+
             // calculo de 1/3 do valor mensal para cada cliente
             decimal totalConsolidado = clientesAtivos.Sum(c => c.ValorMensal / 3m);
             var resultado = new MotorResultado
@@ -36,13 +45,20 @@ namespace CompraProgramada.Application.Services
                 TotalConsolidado = totalConsolidado
             };
 
+            _logger.LogInformation("Total consolidado para compra: R$ {TotalConsolidado}", totalConsolidado);
+
             // buscar cotações de cada ticker
             var cotacoes = new Dictionary<string, CotacaoB3>();
             foreach (var item in cesta.Itens)
             {
                 var cot = _parser.ObterCotacaoFechamento("cotacoes", item.Ticker);
-                if (cot == null) throw new Exception($"COTACAO_NAO_ENCONTRADA: {item.Ticker}");
+                if (cot == null)
+                {
+                    _logger.LogError("Cotação não encontrada para o ticker {Ticker}", item.Ticker);
+                    throw new Exception($"COTACAO_NAO_ENCONTRADA: {item.Ticker}");
+                }
                 cotacoes[item.Ticker] = cot;
+                _logger.LogDebug("Cotação carregada para {Ticker}: R$ {Preco}", item.Ticker, cot.PrecoFechamento);
             }
 
             var custodiaMaster = ObterOuCriarCustodiaMaster();

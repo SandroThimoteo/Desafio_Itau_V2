@@ -6,10 +6,16 @@ using CompraProgramada.Infrastructure.Data;
 using CompraProgramada.Infrastructure;
 using CompraProgramada.Application.Services;
 using CompraProgramada.Api.Services;
+using CompraProgramada.Api.Middleware;
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configurar logging estruturado
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 // add services
 builder.Services.AddControllers();
@@ -56,6 +62,10 @@ using (var scope = app.Services.CreateScope())
 
 // Habilitar Swagger em Development e Production (para facilitar desenvolvimento local)
 app.UseDeveloperExceptionPage();
+
+// Middleware de Correlation ID para rastreamento de requisições
+app.UseMiddleware<CorrelationIdMiddleware>();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 

@@ -32,7 +32,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AdicionarCliente_ComValorMensal_DeBordaMinima_DeveAceitar()
     {
         // Arrange
-        var clienteService = new ClienteService(_db);
+        var clienteService = new ClienteService(_db, LoggerTestHelper.CreateMockLogger<ClienteService>());
 
         // Act
         var cliente = clienteService.AdicionarCliente(
@@ -51,7 +51,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AdicionarCliente_ComValorMensal_Fracionado_DeveAceitar()
     {
         // Arrange
-        var clienteService = new ClienteService(_db);
+        var clienteService = new ClienteService(_db, LoggerTestHelper.CreateMockLogger<ClienteService>());
 
         // Act
         var cliente = clienteService.AdicionarCliente(
@@ -70,7 +70,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AdicionarCliente_ComValorMensal_VeryLarge_DeveAceitar()
     {
         // Arrange
-        var clienteService = new ClienteService(_db);
+        var clienteService = new ClienteService(_db, LoggerTestHelper.CreateMockLogger<ClienteService>());
 
         // Act
         var cliente = clienteService.AdicionarCliente(
@@ -93,7 +93,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AdicionarCliente_ComValorMenor_DeveThrow(decimal valor)
     {
         // Arrange
-        var clienteService = new ClienteService(_db);
+        var clienteService = new ClienteService(_db, LoggerTestHelper.CreateMockLogger<ClienteService>());
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() =>
@@ -105,7 +105,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AlterarValorMensal_ComSequenciaDeAumentosEQuedas_DeveAlternar()
     {
         // Arrange
-        var clienteService = new ClienteService(_db);
+        var clienteService = new ClienteService(_db, LoggerTestHelper.CreateMockLogger<ClienteService>());
         var cliente = clienteService.AdicionarCliente(
             "João Silva",
             "12345678901",
@@ -132,7 +132,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void SairDoProduto_DeveRegistrarDataSaidaComTimestamp()
     {
         // Arrange
-        var clienteService = new ClienteService(_db);
+        var clienteService = new ClienteService(_db, LoggerTestHelper.CreateMockLogger<ClienteService>());
         var cliente = clienteService.AdicionarCliente(
             "João Silva",
             "12345678901",
@@ -163,7 +163,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void CriarCesta_ComPercentuaisQueNaoFechamEm100_DeveThrow()
     {
         // Arrange
-        var cestaService = new CestaService();
+        var cestaService = new CestaService(LoggerTestHelper.CreateMockLogger<CestaService>());
         
         // Teste vários cenários
         var cenarios = new List<(decimal soma, List<CestaItem> itens)>
@@ -199,7 +199,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void CriarCesta_ComAtivosRepetidos_DeveAceitar()
     {
         // Arrange
-        var cestaService = new CestaService();
+        var cestaService = new CestaService(LoggerTestHelper.CreateMockLogger<CestaService>());
         var itens = new List<CestaItem>
         {
             new() { Ticker = "PETR4", Percentual = 25 },
@@ -221,7 +221,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void CriarCesta_ComPercentualZero_DeveAceitar()
     {
         // Arrange
-        var cestaService = new CestaService();
+        var cestaService = new CestaService(LoggerTestHelper.CreateMockLogger<CestaService>());
         var itens = new List<CestaItem>
         {
             new() { Ticker = "PETR4", Percentual = 30 },
@@ -242,7 +242,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void CriarCesta_ComPercentualNegativo_DeveAceitar()
     {
         // Arrange
-        var cestaService = new CestaService();
+        var cestaService = new CestaService(LoggerTestHelper.CreateMockLogger<CestaService>());
         var itens = new List<CestaItem>
         {
             new() { Ticker = "PETR4", Percentual = 50 },
@@ -263,7 +263,7 @@ public class ApplicationEdgeCasesTests : IDisposable
     public void AtualizarCesta_ParaValoresComFloatingPointPrecision_DeveHandleDecimal()
     {
         // Arrange
-        var cestaService = new CestaService();
+        var cestaService = new CestaService(LoggerTestHelper.CreateMockLogger<CestaService>());
         var itens = new List<CestaItem>
         {
             new() { Ticker = "PETR4", Percentual = 20.1m },
