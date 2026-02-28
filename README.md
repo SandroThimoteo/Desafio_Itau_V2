@@ -1,6 +1,6 @@
 # Sistema de Compra Programada de Ações - Itaú Corretora
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#) [![Tests: 89/89](https://img.shields.io/badge/tests-89%2F89%20passing-brightgreen)](#) [![Coverage: 79.87%](https://img.shields.io/badge/coverage-79.87%25%20(Application)-blue)](#)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#) [![Tests: 99/99](https://img.shields.io/badge/tests-99%2F99%20passing-brightgreen)](#) [![Coverage: 31.51%](https://img.shields.io/badge/coverage-31.51%25%20(overall)-blue)](#)
 
 Sistema automatizado de compra programada de ações para a Itaú Corretora, implementando um motor inteligente que executa compras nos dias 5, 15 e 25 de cada mês, consolida ações de múltiplos clientes, distribui proporcionalmente e gerencia rebalanceamentos fiscais com integração Kafka.
 
@@ -8,9 +8,10 @@ Sistema automatizado de compra programada de ações para a Itaú Corretora, imp
 
 ## ✅ Status: CONCLUÍDO - 100% das Funcionalidades Implementadas
 
-- **Testes**: 89/89 passando (100%)
+- **Testes**: 99/99 passando (100%)
 - **Cobertura Application**: 79.87% (muito bom)
-- **Cobertura Domain**: 84.56% (excelente)
+- **Cobertura Domain**: 85.80% (excelente)
+- **Cobertura API**: 47.27% (controllers com integração)
 - **Data**: 28 de Fevereiro de 2026
 
 ---
@@ -99,7 +100,7 @@ Swagger: `http://localhost:5000/swagger`
 ```bash
 dotnet test tests/CompraProgramada.Tests/CompraProgramada.Tests.csproj
 ```
-Esperado: `89/89 passando`
+Esperado: `99/99 passando`
 
 #### 5️⃣ (Opcional) Executar motor manualmente
 ```bash
@@ -113,17 +114,17 @@ curl -X POST http://localhost:5000/api/motor/executar-compra \
 ## 📊 Resultados de Testes
 
 ```
-✅ Total: 89 testes
-✅ Passando: 89 (100%)
+✅ Total: 99 testes
+✅ Passando: 99 (100%)
 ✅ Falhando: 0
 
-Cobertura por Proyecto:
-  Domain:        84.56% (excelente)
+Cobertura por Projeto:
+  Domain:        85.80% (excelente)
   Application:   79.87% (muito bom)
-  Api:           21.49% (controllers não testados)
+  Api:           47.27% (controllers de Cliente/Admin testados)
   Infrastructure: 8.04% (apenas queries críticas)
   
-Tempo: ~2 segundos
+Tempo: ~4 segundos
 ```
 
 ### Distribuição de Testes
@@ -137,6 +138,7 @@ Tempo: ~2 segundos
 - **MotorAgendamentoStatusStore**: 3 testes
 - **Infrastructure (CRUD/Queries)**: 20+ testes
 - **Edge Cases**: 15+ testes
+- **Controllers (Integração API)**: 10 testes
 
 ---
 
@@ -190,7 +192,7 @@ decimal quantidade_cliente = floor(quantidade_total * proporcao);
 - **Venda**: 20% sobre lucro se vendas_mes > 20k
 
 ### 5. Testes com InMemory DB
-- **Benefício**: Velocidade (2s para 89 testes) + isolamento
+- **Benefício**: Velocidade (~4s para 99 testes) + isolamento
 - **Limitação**: Não testa SQL nativo, mas valida lógica EF Core
 - **Estratégia**: Fixtures isoladas por domínio
 
@@ -209,7 +211,7 @@ Desafio_Itau_V2/
 │   ├── CompraProgramada.Domain/       # Entities + Business Rules
 │   └── CompraProgramada.Infrastructure/ # EF Core + Kafka
 ├── tests/
-│   └── CompraProgramada.Tests/        # 89 testes unitários
+│   └── CompraProgramada.Tests/        # 99 testes (unitários + integração)
 ├── zPastadeDoc/                       # Documentação original
 │   ├── desafio-tecnico-compra-programada.md
 │   ├── exemplos-contratos-api.md
@@ -277,7 +279,7 @@ dotnet test --filter "MotorCompraServiceTests"
 
 ## ⚠️ Observações Importantes
 
-1. **Cobertura Total (27.85%)** inclui Controllers (não testados no escopo) e Infrastructure (queries apenas)
+1. **Cobertura Total (31.51%)** com controllers de API cobertos por testes de integração
 2. **Cobertura de Lógica de Negócio (Domain + Application): ~85%** - excelente
 3. **Status do Scheduler**: persistido em JSON, sobrevive a restarts
 4. **Distribuição**: garantida proporcional via fórmula matemática
@@ -299,8 +301,9 @@ dotnet test --filter "MotorCompraServiceTests"
 ## 📝 Notas para Avaliação
 
 ✅ **Funcionalidades**: 100% obrigatórias implementadas  
-✅ **Testes**: 89/89 passando, zero falhas  
+✅ **Testes**: 99/99 passando, zero falhas  
 ✅ **Cobertura Application**: 79.87% (acima de 70%)  
+✅ **Cobertura API**: 47.27% (controllers críticos cobertos)  
 ✅ **Arquitetura**: Clean Layers, SOLID principles  
 ✅ **Documentação**: README + código comentado  
 ✅ **Qualidade**: Sem erros de compilação, Swagger completo  
