@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CompraProgramada.Domain\CompraProgramada.Domain.csproj" />
+    <ProjectReference Include="..\CompraProgramada.Infrastructure\CompraProgramada.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
