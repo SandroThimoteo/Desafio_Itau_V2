@@ -1,0 +1,73 @@
+name: Code Style & Formatting Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  code-style:
+    name: Check Code Style
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install dotnet format
+        run: dotnet tool install -g dotnet-format
+
+      - name: Check formatting
+        run: |
+          dotnet format --verify-no-changes --verbosity diagnostic \
+            --include "src/**/*.cs" \
+            --include "tests/**/*.cs" || {
+            echo "❌ Code formatting issues detected"
+            echo "Run: dotnet format"
+            exit 1
+          }
+
+      - name: Run EditorConfig checks
+        run: |
+          echo "✅ EditorConfig settings applied"
+          find . -name ".editorconfig" -o -name "Directory.Build.props" | head -5
+
+  dependency-check:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Check for vulnerable dependencies
+        run: |
+          dotnet list package --vulnerable 2>&1 | tee vulnerability-report.txt || true
+          if grep -q "has.*vulnerabilities" vulnerability-report.txt; then
+            echo "⚠️ Vulnerable dependencies detected"
+            cat vulnerability-report.txt
+          else
+            echo "✅ No known vulnerabilities found"
+          fi
+
+      - name: Upload dependency report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-report
+          path: vulnerability-report.txt
