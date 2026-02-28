@@ -160,19 +160,19 @@
           "dependencies": {
             "Confluent.Kafka": {
               "target": "Package",
-              "version": "[1.9.2, )"
+              "version": "[2.3.0, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[8.0.2, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[8.0.2, )"
             },
             "Pomelo.EntityFrameworkCore.MySql": {
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[8.0.2, )"
             }
           },
           "imports": [
@@ -229,6 +229,11 @@
             }
           }
         },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
         "restoreAuditProperties": {
           "enableAudit": "true",
           "auditLevel": "low",
@@ -240,29 +245,33 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
-            "Microsoft.EntityFrameworkCore.InMemory": {
+            "Microsoft.Data.Sqlite": {
               "target": "Package",
-              "version": "[8.0.0, )"
+              "version": "[8.0.2, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[8.0.2, )"
             },
             "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
-              "version": "[8.0.0, )"
+              "version": "[8.0.2, )"
             },
             "Microsoft.NET.Test.Sdk": {
               "target": "Package",
-              "version": "[17.0.0, )"
+              "version": "[17.8.0, )"
             },
             "coverlet.collector": {
               "target": "Package",
-              "version": "[3.1.0, )"
+              "version": "[6.0.0, )"
             },
             "xunit": {
               "target": "Package",
-              "version": "[2.4.1, )"
+              "version": "[2.6.2, )"
             },
             "xunit.runner.visualstudio": {
               "target": "Package",
-              "version": "[2.4.3, )"
+              "version": "[2.5.3, )"
             }
           },
           "imports": [

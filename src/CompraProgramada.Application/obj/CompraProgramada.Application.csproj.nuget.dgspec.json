@@ -160,19 +160,19 @@
           "dependencies": {
             "Confluent.Kafka": {
               "target": "Package",
-              "version": "[1.9.2, )"
+              "version": "[2.3.0, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[8.0.2, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[8.0.2, )"
             },
             "Pomelo.EntityFrameworkCore.MySql": {
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[8.0.2, )"
             }
           },
           "imports": [

@@ -10,3 +10,15 @@ D:\Downloads\teste_itau_v2\src\CompraProgramada.Domain\obj\Debug\net8.0\CompraPr
 D:\Downloads\teste_itau_v2\src\CompraProgramada.Domain\obj\Debug\net8.0\refint\CompraProgramada.Domain.dll
 D:\Downloads\teste_itau_v2\src\CompraProgramada.Domain\obj\Debug\net8.0\CompraProgramada.Domain.pdb
 D:\Downloads\teste_itau_v2\src\CompraProgramada.Domain\obj\Debug\net8.0\ref\CompraProgramada.Domain.dll
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\bin\Debug\net8.0\CompraProgramada.Domain.deps.json
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\bin\Debug\net8.0\CompraProgramada.Domain.dll
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\bin\Debug\net8.0\CompraProgramada.Domain.pdb
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\obj\Debug\net8.0\CompraProgramada.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\obj\Debug\net8.0\CompraProgramada.Domain.AssemblyInfoInputs.cache
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\obj\Debug\net8.0\CompraProgramada.Domain.AssemblyInfo.cs
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\obj\Debug\net8.0\CompraProgramada.Domain.csproj.CoreCompileInputs.cache
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\obj\Debug\net8.0\CompraProgramada.Domain.sourcelink.json
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\obj\Debug\net8.0\CompraProgramada.Domain.dll
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\obj\Debug\net8.0\refint\CompraProgramada.Domain.dll
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\obj\Debug\net8.0\CompraProgramada.Domain.pdb
+D:\Downloads\Desafio_Itau_V2\src\CompraProgramada.Domain\obj\Debug\net8.0\ref\CompraProgramada.Domain.dll
