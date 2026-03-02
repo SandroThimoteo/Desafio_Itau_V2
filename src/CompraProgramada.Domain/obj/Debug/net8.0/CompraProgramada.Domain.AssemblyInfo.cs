@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CompraProgramada.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1dfd4c7a231c08206024c6fc86236b9054db36d5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+00929c9fca35adeab2b7ba46c41b989ca156db98")]
 [assembly: System.Reflection.AssemblyProductAttribute("CompraProgramada.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CompraProgramada.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

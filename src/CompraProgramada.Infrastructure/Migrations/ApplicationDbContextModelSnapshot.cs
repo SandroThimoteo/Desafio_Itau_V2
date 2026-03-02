@@ -3,6 +3,7 @@ using System;
 using CompraProgramada.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -16,14 +17,18 @@ namespace CompraProgramada.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.0")
+                .HasAnnotation("ProductVersion", "8.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("CompraProgramada.Domain.Entities.CestaItem", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<long?>("CestaId")
                         .HasColumnType("bigint");
@@ -50,6 +55,8 @@ namespace CompraProgramada.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
                     b.Property<bool>("Ativa")
                         .HasColumnType("tinyint(1)");
 
@@ -73,6 +80,8 @@ namespace CompraProgramada.Infrastructure.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<bool>("Ativo")
                         .HasColumnType("tinyint(1)");
@@ -113,6 +122,8 @@ namespace CompraProgramada.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
                     b.Property<long?>("ClienteId")
                         .HasColumnType("bigint");
 
@@ -140,6 +151,8 @@ namespace CompraProgramada.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
                     b.Property<long?>("ClienteId")
                         .HasColumnType("bigint");
 
@@ -159,6 +172,8 @@ namespace CompraProgramada.Infrastructure.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<long?>("CustodiaId")
                         .HasColumnType("bigint");
@@ -188,6 +203,8 @@ namespace CompraProgramada.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
                     b.Property<long>("ClienteId")
                         .HasColumnType("bigint");
 
@@ -204,6 +221,8 @@ namespace CompraProgramada.Infrastructure.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<long?>("DistribuicaoId")
                         .HasColumnType("bigint");
@@ -222,11 +241,61 @@ namespace CompraProgramada.Infrastructure.Migrations
                     b.ToTable("DistribuicaoItem");
                 });
 
+            modelBuilder.Entity("CompraProgramada.Domain.Entities.IrRegistro", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Aliquota")
+                        .HasPrecision(10, 6)
+                        .HasColumnType("decimal(10,6)");
+
+                    b.Property<long>("ClienteId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("DataEvento")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("LucroLiquido")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("MesReferencia")
+                        .HasMaxLength(7)
+                        .HasColumnType("varchar(7)");
+
+                    b.Property<string>("Ticker")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<decimal>("ValorIR")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ValorOperacao")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("IrRegistros");
+                });
+
             modelBuilder.Entity("CompraProgramada.Domain.Entities.OrdemCompra", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<long>("ClienteId")
                         .HasColumnType("bigint");
@@ -256,6 +325,8 @@ namespace CompraProgramada.Infrastructure.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<bool>("Fracionario")
                         .HasColumnType("tinyint(1)");
@@ -291,6 +362,8 @@ namespace CompraProgramada.Infrastructure.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<long?>("ClienteId")
                         .HasColumnType("bigint");

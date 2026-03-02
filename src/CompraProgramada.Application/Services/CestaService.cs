@@ -27,11 +27,10 @@ namespace CompraProgramada.Application.Services
                 throw new ArgumentException("A cesta deve conter exatamente 5 ativos.", "QUANTIDADE_ATIVOS_INVALIDA");
             }
 
-            decimal soma = itens.Sum(i => i.Percentual);
-            if (soma != 100m)
+            if (itens.Any(i => i.Percentual <= 0))
             {
-                _logger.LogError("Soma de percentuais inválida - Esperado: 100%, Recebido: {SomaPercentuais}", soma);
-                throw new ArgumentException($"A soma dos percentuais deve ser exatamente 100%. Soma atual: {soma}.", "PERCENTUAIS_INVALIDOS");
+                _logger.LogError("Percentual inválido na cesta — todos devem ser maiores que 0%");
+                throw new ArgumentException("Todos os percentuais devem ser maiores que 0%.", "PERCENTUAL_ZERO_INVALIDO");
             }
 
             var cesta = new CestaTopFive

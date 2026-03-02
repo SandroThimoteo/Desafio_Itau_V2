@@ -33,6 +33,11 @@ namespace CompraProgramada.Application.Services
                 _logger.LogWarning("Tentativa de adicionar cliente com CPF inválido");
                 throw new ArgumentException("CPF obrigatório", nameof(cpf));
             }
+            if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
+            {
+                _logger.LogWarning("Tentativa de adicionar cliente com email inválido - CPF: {CPF}", cpf);
+                throw new ArgumentException("E-mail inválido", nameof(email));
+            }
             if (valorMensal < 100m)
             {
                 _logger.LogWarning("Tentativa de adicionar cliente com valor mensal inválido - Valor: R$ {ValorMensal}", valorMensal);

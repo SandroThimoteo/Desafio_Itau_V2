@@ -9,6 +9,7 @@ using CompraProgramada.Infrastructure;
 using CompraProgramada.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace CompraProgramada.Application.Services
 {
@@ -19,11 +20,14 @@ namespace CompraProgramada.Application.Services
         private readonly CotahistParser _parser = new CotahistParser();
         private readonly ILogger<RebalanceService> _logger;
 
-        public RebalanceService(ApplicationDbContext db, IrPublisher irPublisher, ILogger<RebalanceService> logger)
+        private readonly string _pastaCotacoes;
+
+        public RebalanceService(ApplicationDbContext db, IrPublisher irPublisher, ILogger<RebalanceService> logger, IConfiguration configuration)
         {
             _db = db;
             _irPublisher = irPublisher;
             _logger = logger;
+            _pastaCotacoes = configuration["Cotacoes:PastaCotahist"] ?? "cotacoes";
         }
 
         public async Task<RebalanceResultado> RebalancearPorMudancaDeCestaAsync(long cestaId, DateTime dataReferencia, CancellationToken ct = default)
@@ -80,10 +84,15 @@ namespace CompraProgramada.Application.Services
 
                 foreach (var ativo in ativosFora)
                 {
-                    decimal valorVenda = ativo.Quantidade * ativo.PrecoMedio;
+                    var cotacao = _parser.ObterCotacaoFechamento(_pastaCotacoes, RemoverSufixoFracionario(ativo.Ticker));
+                    var precoVenda = cotacao?.PrecoFechamento ?? ativo.PrecoMedio;
+
+                    decimal valorVenda = ativo.Quantidade * precoVenda;
+                    decimal lucroAtivo = ativo.Quantidade * (precoVenda - ativo.PrecoMedio);
+
                     valorTotalVendidoCliente += valorVenda;
                     totalVendasMes += valorVenda;
-                    lucros.Add(0m);
+                    lucros.Add(lucroAtivo);
 
                     resultado.OrdensVendaGeradas++;
                     resultado.ValorTotalVendido += valorVenda;
@@ -198,11 +207,16 @@ namespace CompraProgramada.Application.Services
                     if (quantidadeVenda <= 0)
                         continue;
 
+                    var cotacaoVenda = _parser.ObterCotacaoFechamento(_pastaCotacoes, RemoverSufixoFracionario(itemCarteira.Ticker));
+                    var precoVendaDesvio = cotacaoVenda?.PrecoFechamento ?? itemCarteira.PrecoMedio;
+
                     itemCarteira.Quantidade -= quantidadeVenda;
-                    var valorVenda = quantidadeVenda * itemCarteira.PrecoMedio;
+                    var valorVenda = quantidadeVenda * precoVendaDesvio;
+                    var lucroDesvio = quantidadeVenda * (precoVendaDesvio - itemCarteira.PrecoMedio);
+
                     caixaGerado += valorVenda;
                     totalVendasMes += valorVenda;
-                    lucros.Add(0m);
+                    lucros.Add(lucroDesvio);
                     resultado.OrdensVendaGeradas++;
                     resultado.ValorTotalVendido += valorVenda;
                 }
@@ -267,7 +281,7 @@ namespace CompraProgramada.Application.Services
 
             foreach (var item in cesta.Itens)
             {
-                var cotacao = _parser.ObterCotacaoFechamento("cotacoes", item.Ticker);
+                var cotacao = _parser.ObterCotacaoFechamento(_pastaCotacoes, item.Ticker);
                 if (cotacao == null || cotacao.PrecoFechamento <= 0)
                     continue;
 

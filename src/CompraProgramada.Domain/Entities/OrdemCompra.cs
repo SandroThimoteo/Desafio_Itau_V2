@@ -19,6 +19,7 @@ namespace CompraProgramada.Domain.Entities
         public DateTime? DataConclusao { get; private set; }
         public StatusOrdem Status { get; private set; }
         public decimal ValorTotal { get; private set; }
+        public decimal ValorCarteiraNoMomento { get; set; } // valor total da carteira do cliente no instante da compra
         public List<OrdemCompraItem> Itens { get; private set; } = new List<OrdemCompraItem>();
 
         private OrdemCompra() { }

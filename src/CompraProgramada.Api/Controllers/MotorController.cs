@@ -8,6 +8,7 @@ using CompraProgramada.Api.Services;
 using CompraProgramada.Api.DTOs;
 using CompraProgramada.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using CompraProgramada.Domain.Entities;
 
 namespace CompraProgramada.Api.Controllers
 {
@@ -31,7 +32,12 @@ namespace CompraProgramada.Api.Controllers
         [HttpPost("executar-compra")]
         public ActionResult<MotorExecutionResponse> ExecutarCompra([FromBody] MotorRequest request)
         {
-            var clientesAtivos = _db.Clientes.Where(c => c.Ativo).ToList();
+            var clientesAtivos = _db.Clientes
+    .Where(c => c.Ativo)
+    .Include(c => c.Custodia)
+        .ThenInclude(cu => cu.Itens)
+    .Include(c => c.ContaGrafica)
+    .ToList();
             if (!clientesAtivos.Any())
                 return BadRequest(new { erro = "Nenhum cliente ativo encontrado." });
 
@@ -39,8 +45,18 @@ namespace CompraProgramada.Api.Controllers
             if (cesta == null)
                 return BadRequest(new { erro = "Nenhuma cesta ativa configurada." });
 
-            // Saldo master zerado para execução manual simplificada
-            var saldoMaster = new Dictionary<string, decimal>();
+            // Carregar saldo master real do banco (resíduos de execuções anteriores)
+            var contaMaster = _db.ContasGraficas.FirstOrDefault(c => c.Tipo == ContaTipo.Master);
+            var saldoMaster = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+            if (contaMaster != null)
+            {
+                var custodiaMaster = _db.Custodias
+                    .Include(c => c.Itens)
+                    .FirstOrDefault(c => c.ContaGraficaId == contaMaster.Id);
+                if (custodiaMaster != null)
+                    foreach (var item in custodiaMaster.Itens)
+                        saldoMaster[item.Ticker] = item.Quantidade;
+            }
 
             try
             {
@@ -52,7 +68,7 @@ namespace CompraProgramada.Api.Controllers
                     DataExecucao = resultado.DataExecucao,
                     TotalClientes = resultado.TotalClientes,
                     TotalConsolidado = Math.Round(resultado.TotalConsolidado, 2),
-                    EventosIRPublicados = resultado.ClientesDistribuidos.Count * 5, // Exemplo: 5 eventos por cliente
+                    EventosIRPublicados = resultado.TotalEventosIR,
                     Mensagem = $"Compra programada executada com sucesso para {resultado.TotalClientes} clientes."
                 };
 
@@ -111,12 +127,11 @@ namespace CompraProgramada.Api.Controllers
 
                 response.Distribuicoes = distribuicoes;
 
-                // Resíduos na master (exemplo)
-                response.ResiduosCustMaster = new List<ResiduoDTO>
-                {
-                    new ResiduoDTO { Ticker = "PETR4", Quantidade = 1 },
-                    new ResiduoDTO { Ticker = "VALE3", Quantidade = 1 }
-                };
+                // Resíduos reais calculados pelo motor após distribuição
+                response.ResiduosCustMaster = saldoMaster
+                    .Where(kv => kv.Value > 0)
+                    .Select(kv => new ResiduoDTO { Ticker = kv.Key, Quantidade = kv.Value })
+                    .ToList();
 
                 return Ok(response);
             }

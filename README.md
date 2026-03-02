@@ -6,13 +6,15 @@ Sistema automatizado de compra programada de ações para a Itaú Corretora, imp
 
 ---
 
-## ✅ Status: CONCLUÍDO - 100% das Funcionalidades Implementadas
+## ✅ Status: CONCLUÍDO - 100% Funcional com Frontend React
 
-- **Testes**: 99/99 passando (100%)
+- **Backend**: 99/99 testes passando (100%)
+- **Frontend**: React 18 + Vite + TailwindCSS
 - **Cobertura Application**: 79.87% (muito bom)
 - **Cobertura Domain**: 85.80% (excelente)
 - **Cobertura API**: 47.27% (controllers com integração)
-- **Data**: 28 de Fevereiro de 2026
+- **Auto-increment IDs**: Configurado via migration EF Core
+- **Data**: 02 de Março de 2026
 
 ---
 
@@ -57,7 +59,8 @@ Sistema automatizado de compra programada de ações para a Itaú Corretora, imp
 ## 🏗️ Stack Tecnológico
 
 ```
-Linguagem:     C# / .NET 8.0
+Backend:       C# / .NET 8.0
+Frontend:      React 18 + Vite + TailwindCSS
 Banco Dados:   MySQL 8.0+ (EF Core)
 ORM:           Entity Framework Core 8.0.2
 Mensageria:    Apache Kafka (Docker)
@@ -73,8 +76,9 @@ Cobertura:     Coverlet 6.0.0
 ### Pré-requisitos
 - Docker Desktop
 - .NET 8.0 SDK
+- Node.js 18+ (para frontend)
 
-### Setup em 5 passos
+### Setup em 6 passos
 
 #### 1️⃣ Iniciar infraestrutura
 ```bash
@@ -88,7 +92,7 @@ dotnet restore
 dotnet build
 ```
 
-#### 3️⃣ Executar API
+#### 3️⃣ Executar API Backend
 ```bash
 cd src/CompraProgramada.Api
 dotnet run
@@ -96,7 +100,15 @@ dotnet run
 API em: `http://localhost:5000`  
 Swagger: `http://localhost:5000/swagger`
 
-#### 4️⃣ Rodar testes
+#### 4️⃣ Executar Frontend React
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Frontend em: `http://localhost:5173`
+
+#### 5️⃣ Rodar testes
 ```bash
 dotnet test tests/CompraProgramada.Tests/CompraProgramada.Tests.csproj
 ```
@@ -169,7 +181,19 @@ Tempo: ~4 segundos
 
 ## 🔑 Decisões Técnicas
 
-### 1. BackgroundService para Agendamento
+### 1. Migração de Blazor WebAssembly para React + Vite
+- **Por quê**: Simplicidade, velocidade de desenvolvimento, melhor performance
+- **Quando**: 01-02 de Março de 2026
+- **Stack**: React 18, Vite, TailwindCSS, Axios para API calls
+- **Resultado**: Frontend mais leve, build ~2s vs ~30s do Blazor
+
+### 2. Configuração de Auto-Increment para IDs
+- **Problema**: IDs retornando 0 após insert no MySQL
+- **Solução**: Migration `ConfigureAutoIncrementIds` com `ValueGeneratedOnAdd()`
+- **Impacto**: Todas as entidades (Cliente, Ordem, Custodia, etc) com IDs auto-gerados
+- **Arquivo**: `src/CompraProgramada.Infrastructure/Migrations/20260301034323_ConfigureAutoIncrementIds.cs`
+
+### 3. BackgroundService para Agendamento
 - **Por quê**: Simplicidade, zero dependências extras, polling horário suficiente
 - **Como**: `MotorCompraAgendadoWorker` verifica a cada hora se há ciclos pendentes
 - **Resilência**: Estado persisted em `motor-agendamento-state.json`
@@ -202,23 +226,33 @@ decimal quantidade_cliente = floor(quantidade_total * proporcao);
 
 ```
 Desafio_Itau_V2/
+├── frontend/                          # React + Vite Frontend
+│   ├── src/
+│   │   ├── components/                # React components
+│   │   ├── pages/                     # Página components
+│   │   ├── services/                  # API service layer
+│   │   └── App.jsx
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
 ├── cotacoes/                          # Arquivos COTAHIST
-│   ├── COTAHIST_D20260225.TXT
-│   └── COTAHIST_D20260226.TXT
+│   ├── COTAHIST_D25022026.TXT
+│   └── COTAHIST_D26022026.TXT
 ├── src/
 │   ├── CompraProgramada.Api/          # Controllers + Program
 │   ├── CompraProgramada.Application/  # Services (lógica)
 │   ├── CompraProgramada.Domain/       # Entities + Business Rules
-│   └── CompraProgramada.Infrastructure/ # EF Core + Kafka
+│   └── CompraProgramada.Infrastructure/ # EF Core + Kafka + Migrations
 ├── tests/
 │   └── CompraProgramada.Tests/        # 99 testes (unitários + integração)
-├── zPastadeDoc/                       # Documentação original
+├── DocumentosParaVisu/                # Documentação original
 │   ├── desafio-tecnico-compra-programada.md
 │   ├── exemplos-contratos-api.md
 │   ├── glossario-compra-programada.md
 │   ├── layout-cotahist-b3.md
 │   └── regras-negocio-detalhadas.md
 ├── docker-compose.yml                 # MySQL + Kafka
+├── Desafio_Itau_V2.sln               # Solution file
 └── README.md                          # Esta documentação
 ```
 
@@ -279,11 +313,14 @@ dotnet test --filter "MotorCompraServiceTests"
 
 ## ⚠️ Observações Importantes
 
-1. **Cobertura Total (31.51%)** com controllers de API cobertos por testes de integração
-2. **Cobertura de Lógica de Negócio (Domain + Application): ~85%** - excelente
-3. **Status do Scheduler**: persistido em JSON, sobrevive a restarts
-4. **Distribuição**: garantida proporcional via fórmula matemática
-5. **IR**: automático para dedo-duro, manual para venda se > 20k/mês
+1. **Frontend**: React 18 com chamadas reais à API (zero dados mockados)
+2. **Cobertura Total (31.51%)** com controllers de API cobertos por testes de integração
+3. **Cobertura de Lógica de Negócio (Domain + Application): ~85%** - excelente
+4. **Status do Scheduler**: persistido em JSON, sobrevive a restarts
+5. **Distribuição**: garantida proporcional via fórmula matemática
+6. **IR**: automático para dedo-duro, manual para venda se > 20k/mês
+7. **Auto-increment IDs**: Configurado via migration EF Core (MySQL AUTO_INCREMENT)
+8. **Blazor WebAssembly**: Removido em favor de React + Vite (melhor performance)
 
 ---
 
@@ -305,11 +342,14 @@ dotnet test --filter "MotorCompraServiceTests"
 ✅ **Cobertura Application**: 79.87% (acima de 70%)  
 ✅ **Cobertura API**: 47.27% (controllers críticos cobertos)  
 ✅ **Arquitetura**: Clean Layers, SOLID principles  
+✅ **Frontend**: React 18 + Vite com design moderno  
+✅ **Auto-increment**: Migration configurada e testada  
 ✅ **Documentação**: README + código comentado  
 ✅ **Qualidade**: Sem erros de compilação, Swagger completo  
 
 ---
 
 **Desenvolvido para**: Desafio Técnico - Itaú Corretora  
-**Data de Conclusão**: 28 de Fevereiro de 2026  
-**Status Final**: ✅ CONCLUÍDO COM SUCESSO
+**Data de Início**: 28 de Fevereiro de 2026  
+**Última Atualização**: 02 de Março de 2026  
+**Status Final**: ✅ CONCLUÍDO COM SUCESSO + FRONTEND REACT

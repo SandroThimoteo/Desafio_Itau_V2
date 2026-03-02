@@ -73,7 +73,7 @@ namespace CompraProgramada.Infrastructure
             return cotacoes;
         }
 
-        public CotacaoB3? ObterCotacaoFechamento(string pastaCotacoes, string ticker)
+            public CotacaoB3? ObterCotacaoFechamento(string pastaCotacoes, string ticker)
         {
             if (!Directory.Exists(pastaCotacoes))
                 return null;
@@ -84,10 +84,9 @@ namespace CompraProgramada.Infrastructure
 
             foreach (var arquivo in arquivos)
             {
-                var cotacoes = ParseArquivo(arquivo);
-                var cotacao = cotacoes
+                var cotacao = ParseArquivo(arquivo)
                     .Where(c => c.Ticker.Equals(ticker, StringComparison.OrdinalIgnoreCase))
-                    .Where(c => c.TipoMercado == 10) // Mercado a vista
+                    .Where(c => c.TipoMercado == 10)
                     .FirstOrDefault();
 
                 if (cotacao != null)
@@ -113,10 +112,8 @@ namespace CompraProgramada.Infrastructure
 
         private string CleanTicker(string raw)
         {
-            // trim spaces
-            var t = raw.Trim();
-            // remove any leading zeros which some arquivos pad erroneously
-            return t.TrimStart('0');
+            // Apenas trim de espaços conforme especificação B3
+            return raw.Trim();
         }
     }
 }

@@ -17,15 +17,14 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-// CORS — permitir requisições do frontend Blazor
+// CORS — permitir requisições do frontend React
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5288", "http://localhost:5289")
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+              .AllowAnyHeader();
     });
 });
 
@@ -74,6 +73,21 @@ using (var scope = app.Services.CreateScope())
 
 // Habilitar Swagger em Development e Production (para facilitar desenvolvimento local)
 app.UseDeveloperExceptionPage();
+
+// Middleware CORS manual — garante headers em todas as requisições
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+    context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.CompleteAsync();
+        return;
+    }
+    await next();
+});
 
 // Middleware de Correlation ID para rastreamento de requisições
 app.UseMiddleware<CorrelationIdMiddleware>();

@@ -37,9 +37,10 @@ namespace CompraProgramada.Api.Controllers
                 {
                     o.Id,
                     o.ClienteId,
-                    o.DataCriacao,
+                    DataCriacao = o.DataCriacao,
                     o.DataConclusao,
                     Status = o.Status.ToString(),
+                    Executada = o.Status.ToString() == "Concluida" || o.Status.ToString() == "Executada",
                     o.ValorTotal,
                     Itens = o.Itens.Select(i => new { i.Ticker, i.Quantidade, i.PrecoUnitario, i.ValorItem, i.Fracionario })
                 })
@@ -69,6 +70,7 @@ namespace CompraProgramada.Api.Controllers
                     d.Id,
                     d.ClienteId,
                     d.Data,
+                    d.ValorAporte,
                     Itens = d.Itens.Select(i => new { i.Ticker, i.Quantidade })
                 })
                 .ToList();

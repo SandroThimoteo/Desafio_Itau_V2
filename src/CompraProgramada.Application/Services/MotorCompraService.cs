@@ -6,6 +6,7 @@ using CompraProgramada.Domain.Services;
 using CompraProgramada.Infrastructure;
 using CompraProgramada.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace CompraProgramada.Application.Services
@@ -16,12 +17,14 @@ namespace CompraProgramada.Application.Services
         private readonly ApplicationDbContext _db;
         private readonly IrPublisher _irPublisher;
         private readonly ILogger<MotorCompraService> _logger;
+        private readonly string _pastaCotacoes;
 
-        public MotorCompraService(ApplicationDbContext db, IrPublisher irPublisher, ILogger<MotorCompraService> logger)
+        public MotorCompraService(ApplicationDbContext db, IrPublisher irPublisher, ILogger<MotorCompraService> logger, IConfiguration configuration)
         {
             _db = db;
             _irPublisher = irPublisher;
             _logger = logger;
+            _pastaCotacoes = configuration["Cotacoes:PastaCotahist"] ?? "cotacoes";
         }
 
         /// <summary>
@@ -51,7 +54,7 @@ namespace CompraProgramada.Application.Services
             var cotacoes = new Dictionary<string, CotacaoB3>();
             foreach (var item in cesta.Itens)
             {
-                var cot = _parser.ObterCotacaoFechamento("cotacoes", item.Ticker);
+                var cot = _parser.ObterCotacaoFechamento(_pastaCotacoes, item.Ticker);
                 if (cot == null)
                 {
                     _logger.LogError("Cotação não encontrada para o ticker {Ticker}", item.Ticker);
@@ -120,12 +123,28 @@ namespace CompraProgramada.Application.Services
                 {
                     var ordem = OrdemCompra.Criar(cliente.Id, ordemItens);
                     ordem.MarcarExecutada(); // já executada pela lógica do motor
+
+                    // Calcular valor total da carteira do cliente neste momento (custódia atual + nova compra)
+                    var valorCarteiraAtual = 0m;
+                    if (cliente.Custodia != null)
+                        foreach (var custItem in cliente.Custodia.Itens)
+                        {
+                            var tickerBase = custItem.Ticker.EndsWith("F") ? custItem.Ticker[..^1] : custItem.Ticker;
+                            var cotItem = cotacoes.GetValueOrDefault(tickerBase) ?? cotacoes.GetValueOrDefault(custItem.Ticker);
+                            var preco = cotItem?.PrecoFechamento ?? custItem.PrecoMedio;
+                            valorCarteiraAtual += custItem.Quantidade * preco;
+                        }
+                    // Incluir o valor da nova compra
+                    valorCarteiraAtual += ordemItens.Sum(i => i.ValorItem);
+                    ordem.ValorCarteiraNoMomento = Math.Round(valorCarteiraAtual, 2);
+
                     _db.OrdensCompra.Add(ordem);
 
                     var distribuicao = new Distribuicao
                     {
                         ClienteId = cliente.Id,
                         Data = DateTime.UtcNow,
+                        ValorAporte = aporte,
                         Itens = ordemItens.Select(i => new DistribuicaoItem
                         {
                             Ticker = i.Ticker,
@@ -165,6 +184,7 @@ namespace CompraProgramada.Application.Services
                         });
 
                         _irPublisher.PublishDedoDuro(evt).GetAwaiter().GetResult();
+                        resultado.TotalEventosIR++;
                     }
                 }
             }
@@ -301,5 +321,6 @@ namespace CompraProgramada.Application.Services
         public decimal TotalConsolidado { get; set; }
         public List<OrdemCompraItem> Ordens { get; set; } = new List<OrdemCompraItem>();
         public List<long> ClientesDistribuidos { get; set; } = new List<long>();
+        public int TotalEventosIR { get; set; }
     }
 }

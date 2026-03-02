@@ -8,6 +8,7 @@ namespace CompraProgramada.Domain.Entities
         public long Id { get; set; }
         public long ClienteId { get; set; }
         public DateTime Data { get; set; }
+        public decimal? ValorAporte { get; set; }
         public List<DistribuicaoItem> Itens { get; set; } = new List<DistribuicaoItem>();
     }
 
