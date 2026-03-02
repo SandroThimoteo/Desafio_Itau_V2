@@ -30,7 +30,14 @@ namespace CompraProgramada.Application.Services
             if (itens.Any(i => i.Percentual <= 0))
             {
                 _logger.LogError("Percentual inválido na cesta — todos devem ser maiores que 0%");
-                throw new ArgumentException("Todos os percentuais devem ser maiores que 0%.", "PERCENTUAL_ZERO_INVALIDO");
+                throw new ArgumentException("Todos os percentuais devem ser maiores que 0%.", "PERCENTUAIS_INVALIDOS");
+            }
+
+            var somaPercentuais = itens.Sum(i => i.Percentual);
+            if (Math.Abs(somaPercentuais - 100m) > 0.01m)
+            {
+                _logger.LogError("Soma dos percentuais inválida na cesta — Esperado: 100%, Recebido: {Soma}%", somaPercentuais);
+                throw new ArgumentException($"A soma dos percentuais deve ser exatamente 100%. Soma atual: {somaPercentuais}%.", "PERCENTUAIS_INVALIDOS");
             }
 
             var cesta = new CestaTopFive

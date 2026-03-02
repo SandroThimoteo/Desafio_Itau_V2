@@ -48,6 +48,9 @@ namespace CompraProgramada.Api.Controllers
                 var ativosRemovidos = cestaAnterior?.Itens.Select(i => i.Ticker).ToList() ?? new List<string>();
                 var ativosAdicionados = cesta.Itens.Select(i => i.Ticker).ToList() ?? new List<string>();
 
+                var clientesAtivos = _db.Clientes.Count(c => c.Ativo);
+                var rebalanceamentoDisparado = cestaAnterior != null;
+
                 var response = new CestaCreateResponse
                 {
                     CestaId = cesta.Id,
@@ -59,8 +62,10 @@ namespace CompraProgramada.Api.Controllers
                         Ticker = i.Ticker,
                         Percentual = Math.Round(i.Percentual, 2)
                     }).ToList(),
-                    RebalanceamentoDisparado = cestaAnterior != null,
-                    Mensagem = cestaAnterior == null ? "Primeira cesta cadastrada com sucesso." : $"Cesta atualizada. Rebalanceamento disparado para clientes ativos."
+                    RebalanceamentoDisparado = rebalanceamentoDisparado,
+                    Mensagem = cestaAnterior == null
+                        ? "Primeira cesta cadastrada com sucesso."
+                        : $"Cesta atualizada. Rebalanceamento disparado para {clientesAtivos} clientes ativos."
                 };
 
                 if (cestaAnterior != null)
@@ -74,13 +79,16 @@ namespace CompraProgramada.Api.Controllers
 
                     response.AtivosRemovidos = ativosRemovidos.Except(ativosAdicionados).ToList();
                     response.AtivosAdicionados = ativosAdicionados.Except(ativosRemovidos).ToList();
+
+                    // RN-019: acionar rebalanceamento para todos os clientes ativos
+                    _ = _rebalanceService.RebalancearPorMudancaDeCestaAsync(cesta.Id, DateTime.UtcNow, ct);
                 }
 
                 return Created($"/api/admin/cesta/atual", response);
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { erro = ex.Message, codigo = "PERCENTUAIS_INVALIDOS" });
+                return BadRequest(new { erro = ex.Message, codigo = ex.ParamName });
             }
             catch (Exception ex)
             {

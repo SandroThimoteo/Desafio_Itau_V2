@@ -36,6 +36,10 @@ namespace CompraProgramada.Api.Controllers
                 _db.Clientes.Add(cliente);
                 _db.SaveChanges();
 
+                // Atualiza NumeroConta com o ID real gerado pelo banco (formato FLH-000001)
+                cliente.ContaGrafica.NumeroConta = $"FLH-{cliente.Id:D6}";
+                _db.SaveChanges();
+
                 var response = new AdesaoResponse
                 {
                     ClienteId = cliente.Id,
@@ -90,7 +94,7 @@ namespace CompraProgramada.Api.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { erro = ex.Message });
+                return BadRequest(new { erro = ex.Message, codigo = "CLIENTE_JA_INATIVO" });
             }
         }
 
