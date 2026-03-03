@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CompraProgramada.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8ce370229b692d7a4b7d3a96260b93ad85d019da")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fe13b9743732b379330cb053e865a1630a693198")]
 [assembly: System.Reflection.AssemblyProductAttribute("CompraProgramada.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CompraProgramada.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
