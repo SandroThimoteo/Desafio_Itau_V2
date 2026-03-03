@@ -25,7 +25,7 @@ Sistema automatizado de compra programada de ações para a Itaú Corretora, imp
 
 ### Cliente (API)
 - ✅ Adesão ao produto (POST /api/clientes/adesao)
-- ✅ Saída do produto (POST /api/clientes/{id}/saida)
+- ✅ Saída do produto (DELETE /api/clientes/{id}/saida)
 - ✅ Alterar valor mensal (PUT /api/clientes/{id}/valor-mensal)
 - ✅ Consultar carteira (GET /api/clientes/{id}/carteira)
 - ✅ Rentabilidade detalhada (GET /api/clientes/{id}/rentabilidade)
@@ -314,35 +314,6 @@ dotnet test --filter "MotorCompraServiceTests"
 
 ---
 
-## ⚙️ CI/CD (GitHub Actions)
-
-Dois workflows automáticos configurados em `.github/workflows/`:
-
-### Build, Test & Code Quality
-Executado em todo push/PR para `main` e `develop`:
-- Restaura dependências NuGet e compila em Release
-- Executa todos os 99 testes unitários
-- Coleta cobertura (formato Cobertura) e faz upload do relatório
-- Análise estática com SonarQube (requer secret `SONAR_TOKEN`)
-
-### Code Quality Checks
-- Verifica formatação com `dotnet-format`
-- Detecta dependências vulneráveis (`dotnet list package --vulnerable`)
-
-### Rodar análise local com coverage
-
-```bash
-dotnet test tests/CompraProgramada.Tests/CompraProgramada.Tests.csproj \
-  /p:CollectCoverage=true \
-  /p:CoverageFormat=cobertura
-
-# Gerar relatório HTML (opcional)
-dotnet tool install -g dotnet-reportgenerator-globaltool
-reportgenerator -reports:"coverage.cobertura.xml" -targetdir:"coverage-report"
-```
-
----
-
 ## ⚠️ Observações Importantes
 
 1. **Frontend**: React 18 com chamadas reais à API (zero dados mockados)
@@ -359,6 +330,7 @@ reportgenerator -reports:"coverage.cobertura.xml" -targetdir:"coverage-report"
 
 - [ ] Structured logging (Serilog)
 - [ ] Metrics (Prometheus)
+- [ ] CI/CD pipeline (GitHub Actions)
 - [ ] Redis cache para cotações
 - [ ] JWT authentication
 

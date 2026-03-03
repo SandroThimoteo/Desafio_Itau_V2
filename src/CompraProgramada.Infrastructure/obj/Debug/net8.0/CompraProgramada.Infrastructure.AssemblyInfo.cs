@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CompraProgramada.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c4bc22e93be76b71c869150c424e1b29a9c5e63d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+00929c9fca35adeab2b7ba46c41b989ca156db98")]
 [assembly: System.Reflection.AssemblyProductAttribute("CompraProgramada.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CompraProgramada.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

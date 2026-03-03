@@ -6,13 +6,9 @@ async function api(path, method = "GET", body) {
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`);
   const text = await res.text();
-  const json = text ? JSON.parse(text) : null;
-  if (!res.ok) {
-    const mensagem = json?.erro ?? json?.message ?? json?.title ?? `Erro ${res.status}: ${res.statusText}`;
-    throw new Error(mensagem);
-  }
-  return json;
+  return text ? JSON.parse(text) : null;
 }
 
 // Clientes

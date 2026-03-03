@@ -211,9 +211,6 @@ namespace CompraProgramada.Infrastructure.Migrations
                     b.Property<DateTime>("Data")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<decimal?>("ValorAporte")
-                        .HasColumnType("decimal(65,30)");
-
                     b.HasKey("Id");
 
                     b.ToTable("Distribuicoes");
@@ -311,10 +308,6 @@ namespace CompraProgramada.Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("ValorCarteiraNoMomento")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("ValorTotal")
                         .HasPrecision(18, 2)

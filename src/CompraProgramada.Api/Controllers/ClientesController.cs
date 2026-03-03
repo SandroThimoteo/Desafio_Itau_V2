@@ -188,19 +188,6 @@ namespace CompraProgramada.Api.Controllers
             return Ok(response);
         }
 
-        [HttpGet("debug-cotacao/{ticker}")]
-        public ActionResult DebugCotacao(string ticker)
-        {
-            var parser = new CompraProgramada.Infrastructure.CotahistParser();
-            var cotacao = parser.ObterCotacaoFechamento(_pastaCotacoes, ticker);
-            return Ok(new {
-                pastaCotacoes = _pastaCotacoes,
-                ticker = ticker,
-                encontrou = cotacao != null,
-                preco = cotacao?.PrecoFechamento
-            });
-        }
-
         [HttpGet("{clienteId}/rentabilidade")]
         public ActionResult<RentabilidadeResponse> ConsultarRentabilidade(long clienteId)
         {
@@ -213,32 +200,42 @@ namespace CompraProgramada.Api.Controllers
                 return NotFound(new { erro = "Cliente não encontrado", codigo = "CLIENTE_NAO_ENCONTRADO" });
 
             var parser = new CompraProgramada.Infrastructure.CotahistParser();
-            var itens = new List<AtivoCarteiraDTO>();
+
+            // Montar dicionário de cotações atuais por ticker (evita buscar múltiplas vezes)
+            var cotacoes = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in cliente.Custodia?.Itens ?? new List<CustodiaItem>())
+            {
+                var tickerBase = RemoverSufixoFracionario(item.Ticker);
+                if (!cotacoes.ContainsKey(tickerBase))
+                {
+                    var cot = parser.ObterCotacaoFechamento(_pastaCotacoes, tickerBase);
+                    // Para fracionário sem cotação própria, usar o ticker base
+                    cotacoes[tickerBase] = cot?.PrecoFechamento ?? item.PrecoMedio;
+                }
+            }
+
+            // Calcular valor total investido e valor atual com cotações reais
             decimal valorTotalInvestido = 0m;
             decimal valorAtualCarteira = 0m;
 
             foreach (var item in cliente.Custodia?.Itens ?? new List<CustodiaItem>())
             {
                 var tickerBase = RemoverSufixoFracionario(item.Ticker);
-                var cotacao = parser.ObterCotacaoFechamento(_pastaCotacoes, tickerBase)
-                             ?? parser.ObterCotacaoFechamento(_pastaCotacoes, item.Ticker);
+                var precoAtual = cotacoes.GetValueOrDefault(tickerBase, item.PrecoMedio);
 
-                var precoAtual = cotacao?.PrecoFechamento ?? item.PrecoMedio;
-                var valorInvestido = item.Quantidade * item.PrecoMedio;
-                var valorAtual = item.Quantidade * precoAtual;
-
-                valorTotalInvestido += valorInvestido;
-                valorAtualCarteira += valorAtual;
+                valorTotalInvestido += item.Quantidade * item.PrecoMedio;
+                valorAtualCarteira  += item.Quantidade * precoAtual;
             }
 
             var plTotal = valorAtualCarteira - valorTotalInvestido;
-            var rentabilidadeTotal = valorTotalInvestido > 0 ? (plTotal / valorTotalInvestido) * 100m : 0m;
+            var rentabilidadeTotal = valorTotalInvestido > 0
+                ? (plTotal / valorTotalInvestido) * 100m
+                : 0m;
 
+            // Histórico de aportes e evolução da carteira por ordem de compra
             var ordens = _db.OrdensCompra
-                .AsNoTracking()
                 .Where(o => o.ClienteId == clienteId)
                 .OrderBy(o => o.DataCriacao)
-                .Select(o => new { o.Id, o.ValorTotal, o.ValorCarteiraNoMomento, o.DataCriacao })
                 .ToList();
 
             var historicoAportes = new List<AporteDTO>();
@@ -246,6 +243,12 @@ namespace CompraProgramada.Api.Controllers
 
             decimal acumuladoInvestido = 0m;
             int totalAportes = ordens.Count;
+
+            // Fator de valorização atual da carteira (valorAtual / valorInvestido)
+            // Usado para estimar o valor de mercado proporcional em cada ponto histórico
+            decimal fatorValorizacao = valorTotalInvestido > 0
+                ? valorAtualCarteira / valorTotalInvestido
+                : 1m;
 
             for (int i = 0; i < ordens.Count; i++)
             {
@@ -255,26 +258,21 @@ namespace CompraProgramada.Api.Controllers
                 historicoAportes.Add(new AporteDTO
                 {
                     Data = ordem.DataCriacao.ToString("yyyy-MM-dd"),
-                    DataHora = ordem.DataCriacao.ToString("o"),
                     Valor = Math.Round(ordem.ValorTotal, 2),
                     Parcela = $"{i + 1}/{totalAportes}"
                 });
 
-                // Usar valor histórico real salvo no momento da compra
-                // Fallback para valorAtualCarteira em ordens antigas sem esse campo
-                var valorCarteiraHistorico = ordem.ValorCarteiraNoMomento > 0
-                    ? ordem.ValorCarteiraNoMomento
-                    : valorAtualCarteira;
-
+                // Valor de carteira estimado naquele momento:
+                // proporcional ao investido acumulado × fator de valorização atual
+                var valorCarteiraEstimado = acumuladoInvestido * fatorValorizacao;
                 var rentabilidadePonto = acumuladoInvestido > 0
-                    ? ((valorCarteiraHistorico - acumuladoInvestido) / acumuladoInvestido) * 100m
+                    ? ((valorCarteiraEstimado - acumuladoInvestido) / acumuladoInvestido) * 100m
                     : 0m;
 
                 evolucaoCarteira.Add(new EvolucaoCarteiraDTO
                 {
                     Data = ordem.DataCriacao.ToString("yyyy-MM-dd"),
-                    DataHora = ordem.DataCriacao.ToString("o"),
-                    ValorCarteira = Math.Round(valorCarteiraHistorico, 2),
+                    ValorCarteira = Math.Round(valorCarteiraEstimado, 2),
                     ValorInvestido = Math.Round(acumuladoInvestido, 2),
                     Rentabilidade = Math.Round(rentabilidadePonto, 2)
                 });
@@ -288,8 +286,8 @@ namespace CompraProgramada.Api.Controllers
                 Rentabilidade = new RentabilidadeSummaryDTO
                 {
                     ValorTotalInvestido = Math.Round(valorTotalInvestido, 2),
-                    ValorAtualCarteira = Math.Round(valorAtualCarteira, 2),
-                    PlTotal = Math.Round(plTotal, 2),
+                    ValorAtualCarteira  = Math.Round(valorAtualCarteira, 2),
+                    PlTotal             = Math.Round(plTotal, 2),
                     RentabilidadePercentual = Math.Round(rentabilidadeTotal, 2)
                 },
                 HistoricoAportes = historicoAportes,

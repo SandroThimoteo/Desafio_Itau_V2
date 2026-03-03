@@ -74,35 +74,13 @@ namespace CompraProgramada.Infrastructure
         }
 
             public CotacaoB3? ObterCotacaoFechamento(string pastaCotacoes, string ticker)
-            => ObterCotacaoFechamento(pastaCotacoes, ticker, dataReferencia: null);
-
-        /// <summary>
-        /// Busca a cotação de fechamento mais recente até a dataReferencia informada.
-        /// Se dataReferencia for null, usa o arquivo mais recente disponível.
-        /// </summary>
-        public CotacaoB3? ObterCotacaoFechamento(string pastaCotacoes, string ticker, DateTime? dataReferencia)
         {
             if (!Directory.Exists(pastaCotacoes))
                 return null;
 
             var arquivos = Directory.GetFiles(pastaCotacoes, "COTAHIST_D*.TXT")
-                .OrderByDescending(f => Path.GetFileName(f))
+                .OrderByDescending(f => f)
                 .ToList();
-
-            // Se dataReferencia informada, filtrar apenas arquivos com data <= dataReferencia
-            if (dataReferencia.HasValue)
-            {
-                arquivos = arquivos
-                    .Where(f => {
-                        var nome = Path.GetFileNameWithoutExtension(f); // ex: COTAHIST_D20260225
-                        var parte = nome.Replace("COTAHIST_D", "");     // ex: 20260225
-                        return DateTime.TryParseExact(parte, "yyyyMMdd",
-                            System.Globalization.CultureInfo.InvariantCulture,
-                            System.Globalization.DateTimeStyles.None, out var datArq)
-                            && datArq.Date <= dataReferencia.Value.Date;
-                    })
-                    .ToList();
-            }
 
             foreach (var arquivo in arquivos)
             {
