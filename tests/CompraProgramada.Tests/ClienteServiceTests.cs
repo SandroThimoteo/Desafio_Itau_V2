@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using CompraProgramada.Domain.Entities;
 using CompraProgramada.Application.Services;
 using CompraProgramada.Infrastructure.Data;
+using CompraProgramada.Tests;
 
 public class ClienteServiceTests : IDisposable
 {

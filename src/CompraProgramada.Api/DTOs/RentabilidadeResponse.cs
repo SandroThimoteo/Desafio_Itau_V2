@@ -24,6 +24,7 @@ namespace CompraProgramada.Api.DTOs
     public class AporteDTO
     {
         public string Data { get; set; } = string.Empty;
+        public string? DataHora { get; set; }
         public decimal Valor { get; set; }
         public string Parcela { get; set; } = string.Empty;
     }
@@ -31,6 +32,7 @@ namespace CompraProgramada.Api.DTOs
     public class EvolucaoCarteiraDTO
     {
         public string Data { get; set; } = string.Empty;
+        public string? DataHora { get; set; }
         public decimal ValorCarteira { get; set; }
         public decimal ValorInvestido { get; set; }
         public decimal Rentabilidade { get; set; }

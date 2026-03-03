@@ -58,6 +58,7 @@ namespace CompraProgramada.Infrastructure.Data
                 e.HasKey(o => o.Id);
                 e.Property(o => o.Id).ValueGeneratedOnAdd();
                 e.Property(o => o.ValorTotal).HasPrecision(18, 2);
+                e.Property(o => o.ValorCarteiraNoMomento).HasPrecision(18, 2);
                 e.HasMany(o => o.Itens)
                     .WithOne(i => i.OrdemCompra)
                     .HasForeignKey(i => i.OrdemCompraId)

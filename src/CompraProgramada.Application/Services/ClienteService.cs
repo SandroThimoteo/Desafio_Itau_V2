@@ -41,7 +41,7 @@ namespace CompraProgramada.Application.Services
             if (valorMensal < 100m)
             {
                 _logger.LogWarning("Tentativa de adicionar cliente com valor mensal inválido - Valor: R$ {ValorMensal}", valorMensal);
-                throw new ArgumentException("Valor mensal mínimo é R$ 100,00", nameof(valorMensal));
+                throw new ArgumentException("O valor mensal minimo e de R$ 100,00.", "VALOR_MENSAL_INVALIDO");
             }
             
             // RN-002: CPF deve ser único (validação de duplicidade)
@@ -61,7 +61,7 @@ namespace CompraProgramada.Application.Services
                 DataAdesao = DateTime.UtcNow,
                 ContaGrafica = new ContaGrafica
                 {
-                    NumeroConta = "FLH-" + Guid.NewGuid().ToString().Substring(0, 6).ToUpper(),
+                    NumeroConta = "FLH-PENDENTE",
                     Tipo = ContaTipo.Filhote,
                     DataCriacao = DateTime.UtcNow
                 },
@@ -97,6 +97,8 @@ namespace CompraProgramada.Application.Services
         public void AlterarValorMensal(Cliente cliente, decimal novoValor)
         {
             if (cliente == null) throw new ArgumentNullException(nameof(cliente));
+            if (novoValor < 100m)
+                throw new ArgumentException("O valor mensal minimo e de R$ 100,00.", "VALOR_MENSAL_INVALIDO");
             decimal anterior = cliente.ValorMensal;
             
             _logger.LogInformation(

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CompraProgramada.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ef85f82366ece1ccfb87526fba95ddf7d3e21392")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8ce370229b692d7a4b7d3a96260b93ad85d019da")]
 [assembly: System.Reflection.AssemblyProductAttribute("CompraProgramada.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CompraProgramada.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
