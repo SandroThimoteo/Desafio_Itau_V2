@@ -54,7 +54,8 @@ namespace CompraProgramada.Application.Services
             var cotacoes = new Dictionary<string, CotacaoB3>();
             foreach (var item in cesta.Itens)
             {
-                var cot = _parser.ObterCotacaoFechamento(_pastaCotacoes, item.Ticker);
+                // Usar cotação do arquivo com data <= dataReferencia (não o mais recente)
+                var cot = _parser.ObterCotacaoFechamento(_pastaCotacoes, item.Ticker, dataReferencia);
                 if (cot == null)
                 {
                     _logger.LogError("Cotação não encontrada para o ticker {Ticker}", item.Ticker);
@@ -62,6 +63,14 @@ namespace CompraProgramada.Application.Services
                 }
                 cotacoes[item.Ticker] = cot;
                 _logger.LogDebug("Cotação carregada para {Ticker}: R$ {Preco}", item.Ticker, cot.PrecoFechamento);
+            }
+
+            // Cotações mais recentes disponíveis (para calcular ValorCarteiraNoMomento)
+            var cotacoesAtuais = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in cesta.Itens)
+            {
+                var cotAtual = _parser.ObterCotacaoFechamento(_pastaCotacoes, item.Ticker);
+                cotacoesAtuais[item.Ticker] = cotAtual?.PrecoFechamento ?? cotacoes[item.Ticker].PrecoFechamento;
             }
 
             var custodiaMaster = ObterOuCriarCustodiaMaster();
@@ -124,20 +133,6 @@ namespace CompraProgramada.Application.Services
                     var ordem = OrdemCompra.Criar(cliente.Id, ordemItens);
                     ordem.MarcarExecutada(); // já executada pela lógica do motor
 
-                    // Calcular valor total da carteira do cliente neste momento (custódia atual + nova compra)
-                    var valorCarteiraAtual = 0m;
-                    if (cliente.Custodia != null)
-                        foreach (var custItem in cliente.Custodia.Itens)
-                        {
-                            var tickerBase = custItem.Ticker.EndsWith("F") ? custItem.Ticker[..^1] : custItem.Ticker;
-                            var cotItem = cotacoes.GetValueOrDefault(tickerBase) ?? cotacoes.GetValueOrDefault(custItem.Ticker);
-                            var preco = cotItem?.PrecoFechamento ?? custItem.PrecoMedio;
-                            valorCarteiraAtual += custItem.Quantidade * preco;
-                        }
-                    // Incluir o valor da nova compra
-                    valorCarteiraAtual += ordemItens.Sum(i => i.ValorItem);
-                    ordem.ValorCarteiraNoMomento = Math.Round(valorCarteiraAtual, 2);
-
                     _db.OrdensCompra.Add(ordem);
 
                     var distribuicao = new Distribuicao
@@ -153,7 +148,23 @@ namespace CompraProgramada.Application.Services
                     };
                     _db.Distribuicoes.Add(distribuicao);
 
+                    // Atualizar custódia ANTES de calcular o valor da carteira
                     AtualizarCustodia(cliente, ordemItens);
+
+                    // Calcular valor total da carteira usando cotações ATUAIS (mais recentes)
+                    // Isso permite ver rentabilidade real vs preço de compra histórico
+                    var valorCarteiraAtual = 0m;
+                    foreach (var custItem in cliente.Custodia!.Itens)
+                    {
+                        var tickerBase = custItem.Ticker.EndsWith("F", StringComparison.OrdinalIgnoreCase)
+                            ? custItem.Ticker[..^1]
+                            : custItem.Ticker;
+                        var preco = cotacoesAtuais.TryGetValue(tickerBase, out var precoAtual)
+                            ? precoAtual
+                            : custItem.PrecoMedio;
+                        valorCarteiraAtual += custItem.Quantidade * preco;
+                    }
+                    ordem.ValorCarteiraNoMomento = Math.Round(valorCarteiraAtual, 2);
 
                     foreach (var item in ordemItens)
                     {
